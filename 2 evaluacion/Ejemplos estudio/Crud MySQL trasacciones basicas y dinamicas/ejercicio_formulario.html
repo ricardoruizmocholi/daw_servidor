@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Desarrollador - DB Videojuegos</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        .seccion-form { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #f9f9f9; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .hidden { display: none; }
+        button { background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-size: 14px; }
+        button:hover { background: #218838; }
+        /* Estilo para botones de borrar */
+        #Delete_rollback, #Delete_commit { background: #dc3545; }
+        #Delete_rollback:hover, #Delete_commit:hover { background: #c82333; }
+        /* Estilo para botones de actualizar */
+        #Update_rollback, #Update_commit { background: #007bff; }
+        #Update_rollback:hover, #Update_commit:hover { background: #0069d9; }
+
+        .msg-error { color: #dc3545; font-size: 0.85em; margin: 5px 0; font-weight: bold; }
+        .error { border-color: #dc3545 !important; background-color: #fff8f8; }
+        #resumen { margin-top: 20px; padding: 20px; border: 2px solid #007bff; border-radius: 8px; background: #eef6ff; display: none; }
+        .id-field { background-color: #fff3cd; border: 1px solid #ffeeba; }
+    </style>
+</head>
+<body>
+
+    <h2>Gestión de Desarrollador (videojuegos_asir)</h2>
+
+    <form id="form-desarrollador">
+        <div class="seccion-form">
+            <h3>1. Información Personal</h3>
+            
+            <label for="id_desarrollador">ID Desarrollador (Solo para Update/Delete):</label>
+            <input type="number" id="id_desarrollador" name="id_desarrollador" class="id-field" placeholder="Ej: 5">
+
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Ej: Ana">
+
+            <label for="apellido">Apellidos:</label>
+            <input type="text" id="apellido" name="apellido" placeholder="Ej: Serrano">
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" placeholder="ana.serrano@ejemplo.com">
+
+            <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
+            <input type="date" id="fecha_nacimiento" name="fecha_nacimiento">
+
+            <label for="ciudad">Ciudad:</label>
+            <input type="text" id="ciudad" name="ciudad">
+
+            <label for="pais">País:</label>
+            <input type="text" id="pais" name="pais">
+        </div>
+
+        <div class="seccion-form">
+            <h3>2. Datos de Empresa</h3>
+
+            <label for="fecha_alta">Fecha de Alta en Sistema:</label>
+            <input type="date" id="fecha_alta" name="fecha_alta">
+
+            <div style="margin-top: 15px; background: #eee; padding: 10px; border-radius: 4px;">
+                <input type="checkbox" id="activo" name="activo" checked style="width: auto;">
+                <label style="display: inline;" for="activo">¿Trabajador en activo?</label>
+            </div>
+
+            <div id="contenedor-estudio" class="hidden">
+                <label for="id_estudio">Asignar a Estudio:</label>
+                <select id="id_estudio" name="id_estudio">
+                    <option value="">-- Seleccione un estudio --</option>
+                    <option value="1">Larian Studios (Bélgica)</option>
+                    <option value="2">FromSoftware (Japón)</option>
+                    <option value="3">CD PROJEKT RED (Polonia)</option>
+                    <option value="4">Supergiant Games (USA)</option>
+                    <option value="5">Mojang Studios (Suecia)</option>
+                    <option value="6">MercurySteam (España)</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <button type="button" id="Insert_rollback">Insert | Rollback</button>
+                <button type="button" id="Insert_commit">Insert | Commit</button>
+                <button type="button" id="Update_rollback">Update | Rollback</button>
+                <button type="button" id="Update_commit">Update | Commit</button>
+                <button type="button" id="Delete_rollback">Delete | Rollback</button>
+                <button type="button" id="Delete_commit">Delete | Commit</button>
+            </div>
+            
+        </div>
+    </form>
+
+    <div id="resumen"></div>
+
+    <script>
+        const form = document.getElementById("form-desarrollador");
+        const resumen = document.getElementById("resumen");
+
+        // Captura de elementos
+        const id_desarrollador = document.getElementById("id_desarrollador");
+        const nombre = document.getElementById("nombre");
+        const apellido = document.getElementById("apellido");
+        const email = document.getElementById("email");
+        const ciudad = document.getElementById("ciudad");
+        const pais = document.getElementById("pais");
+        const fecha_nacimiento = document.getElementById("fecha_nacimiento");
+        const fecha_alta = document.getElementById("fecha_alta");
+        const activo = document.getElementById("activo");
+        const id_estudio = document.getElementById("id_estudio");
+        const contenedorEstudio = document.getElementById('contenedor-estudio');
+
+        // Botones
+        const btns = {
+            insertRoll: document.getElementById("Insert_rollback"),
+            insertCommit: document.getElementById("Insert_commit"),
+            updateRoll: document.getElementById("Update_rollback"),
+            updateCommit: document.getElementById("Update_commit"),
+            deleteRoll: document.getElementById("Delete_rollback"),
+            deleteCommit: document.getElementById("Delete_commit")
+        };
+
+        // Lógica visibilidad estudio
+        activo.addEventListener('change', function() {
+            contenedorEstudio.classList.toggle('hidden', !this.checked);
+            if (!this.checked) id_estudio.value = ""; 
+        });
+        if(activo.checked) contenedorEstudio.classList.remove('hidden');
+
+        // FUNCIÓN GET DATOS (Actualizada con ID)
+        const getDatos = (accion, type) => ({
+            id_desarrollador: id_desarrollador.value, // <--- Nuevo campo
+            nombre: nombre.value,
+            apellido: apellido.value,
+            email: email.value,
+            ciudad: ciudad.value,
+            pais: pais.value,
+            fecha_nacimiento: fecha_nacimiento.value,
+            fecha_alta: fecha_alta.value,
+            activo: activo.checked ? 1 : 0,
+            id_estudio: id_estudio.value || null,
+            accion: accion, // Corregido a 'accion' para que coincida con el PHP
+            type: type
+        });
+
+        const pintarTabla = (datos) => {
+            if (datos.length === 0) {
+                resumen.innerHTML += "<p>La tabla está vacía.</p>";
+                return;
+            }
+            let html = `<table>
+                <tr>
+                    <th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Estado</th>
+                </tr>`;
+            
+            datos.forEach(fila => {
+                html += `<tr>
+                    <td>${fila.id_desarrollador}</td>
+                    <td>${fila.nombre}</td>
+                    <td>${fila.apellido}</td>
+                    <td>${fila.email}</td>
+                    <td>${fila.activo == 1 ? 'Activo' : 'Inactivo'}</td>
+                </tr>`;
+            });
+            html += "</table>";
+            resumen.innerHTML += html;
+        };
+
+        const enviarPeticion = async (accion, type) => {
+            // Validación básica para Update/Delete
+            if ((type === 'update' || type === 'delete') && !id_desarrollador.value) {
+                alert("Debes indicar un ID para esta operación");
+                id_desarrollador.focus();
+                return;
+            }
+
+            try {
+                const resp = await fetch("transacciones_formulario.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos(accion, type))
+                });
+                
+                const data = await resp.json();
+                
+                if (data.ok) {
+                    alert(`${data.mensaje}\nTipo: ${type.toUpperCase()}`);
+                    resumen.style.display = "block";  
+                    resumen.innerHTML = `<strong>Resultado:</strong> ${data.mensaje}`;
+                    pintarTabla(data.tabla); // Se muestra la tabla devuelta por el servidor
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (error) {
+                console.error("Error en la petición:", error);
+                alert("Error de conexión con el servidor");
+            }
+        };
+
+        // Eventos de botones
+        btns.insertRoll.addEventListener("click", () => enviarPeticion("roll", "insert"));
+        btns.insertCommit.addEventListener("click", () => enviarPeticion("commit", "insert"));
+        btns.updateRoll.addEventListener("click", () => enviarPeticion("roll", "update"));
+        btns.updateCommit.addEventListener("click", () => enviarPeticion("commit", "update"));
+        btns.deleteRoll.addEventListener("click", () => enviarPeticion("roll", "delete"));
+        btns.deleteCommit.addEventListener("click", () => enviarPeticion("commit", "delete"));
+
+    </script>
+</body>
+</html>
