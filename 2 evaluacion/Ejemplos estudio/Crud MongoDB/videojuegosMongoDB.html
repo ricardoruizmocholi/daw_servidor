@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Desarrollador</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; line-height: 1.6; }
+        .seccion-form { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 20px; background: #f9f9f9; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="date"], select {
+            width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+        }
+        .hidden { display: none; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #0056b3; }
+        .msg-error { color: red; font-size: 0.8em; margin: 5px 0; }
+        .error { border-color: red !important; }
+        #resumen { margin-top: 20px; padding: 15px; border: 2px solid #28a745; border-radius: 8px; background: #e9f7ef; display: none; }
+    </style>
+</head>
+<body>
+
+    <h2>Registro </h2>
+
+    <form class="seccion-form" method="POST" id="form-registro-videojuegos">
+        <h2>Registrar Nuevo Videojuego</h2>
+        
+        <label>ID:</label><br>
+        <input type="number" name="id" id="_id" ><br><br>
+        <label>Título:</label><br>
+        <input type="text" name="titulo" id="titulo" maxlength="160"><br><br>
+
+        <label>Fecha de Lanzamiento:</label><br>
+        <input type="date" name="fecha_lanzamiento" id="fecha_lanzamiento"><br><br>
+
+        <label>Clasificación PEGI:</label><br>
+        <select name="pegi" id="pegi">
+            <option value="3">3</option>
+            <option value="7">7</option>
+            <option value="12">12</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+        </select><br><br>
+
+        <label>Precio Base (€):</label><br>
+        <input type="number" step="0.01" id="precio_base" name="precio_base"><br><br>
+
+        <label>Motor Gráfico:</label><br>
+        <input type="text" name="motor" maxlength="80" id="motor"><br><br>
+
+        <label>¿Es Multijugador?</label>
+        <input type="checkbox" name="es_multijugador" value="1" id="es_multijugador"><br><br>
+
+        <label>Estudio Desarrollador (ID):</label><br>
+        <input type="number" name="id_estudio" placeholder="Ej: 1 para Larian Studios" id="id_estudio"><br><br>
+
+        <label>Descripción:</label><br>
+        <textarea name="descripcion" id="descripcion" rows="4" cols="50"></textarea><br><br>
+
+        <button type="submit">Guardar Videojuego</button>
+    </form>
+    <form class="seccion-form" method="POST" id="form-registro-estudio">
+        <h2>Registrar Nuevo Estudio</h2>
+
+        <label>Nombre del Estudio:</label><br>
+        <input type="text" name="nombre" id="nombre" maxlength="120" ><br><br>
+
+        <label>País:</label><br>
+        <input type="text" name="pais" id="pais" maxlength="80"><br><br>
+
+        <label>Ciudad:</label><br>
+        <input type="text" name="ciudad " id="ciudad" maxlength="80"><br><br>
+
+        <label>Año de Fundación:</label><br>
+        <input type="number" name="fundado_en" id="ano_fundacion" min="1900" max="2026" placeholder="YYYY"><br><br>
+
+        <label>Sitio Web:</label><br>
+        <input  name="web" maxlength="200" id="web" placeholder="https://..."><br><br>
+        <label>telefono</label><br>
+        <input  name="telefono"  id="telefono" placeholder="624564587"><br><br>
+        <label>Email</label><br>
+        <input  name="email"  id="email" placeholder="ejemplo@ejemplo.ej"><br><br>
+
+        <button type="submit">Registrar Estudio</button>
+    </form>
+    <form class="seccion-form" method="POST" id="form-registro-dlc">
+        <h2>Añadir DLC / Expansión</h2>
+
+        <label>Título del DLC:</label><br>
+        <input type="text" name="titulo" id="titulo_dlc" maxlength="160" ><br><br>
+
+        <label>Fecha de Lanzamiento:</label><br>
+        <input type="date" name="fecha_lanzamiento" id="fecha_lanzamiento_dlc"><br><br>
+
+        <label>Precio (€):</label><br>
+        <input type="number" step="0.01" id="precio_dlc" name="precio"><br><br>
+
+        <button type="submit">Añadir Contenido</button>
+    </form>
+    <button type="submit" id="todo">Enviar todos los datos de la tabla Juegos completos</button>
+    <button type="submit" id="insert">Añadir </button>
+    <button type="submit" id="update">Actualizar</button>
+    <button type="submit" id="delete">Borrar</button>
+    <button type="submit" id="buscarUno">Buscar Por Id</button>
+
+
+    <div id="resumen"></div>
+
+    <script>
+        
+        // Referencias a los formularios
+        const form_videojuegos = document.getElementById("form-registro-videojuegos");
+        const form_estudio = document.getElementById("form-registro-estudio");
+        const form_dlc = document.getElementById("form-registro-dlc");
+        
+        // Variables de Videojuegos
+        const _id = document.getElementById("_id");
+        const titulo = document.getElementById("titulo");
+        const fecha_lanzamiento = document.getElementById("fecha_lanzamiento");
+        const pegi = document.getElementById("pegi");
+        const precio_base = document.getElementById("precio_base");
+        const motor = document.getElementById("motor");
+        const es_multijugador = document.getElementById("es_multijugador");
+        const id_estudio_v = document.getElementById("id_estudio");
+        const descripcion = document.getElementById("descripcion");
+        
+        // Variables de Estudio
+        const nombre = document.getElementById("nombre");
+        const pais = document.getElementById("pais");
+        const ciudad = document.getElementById("ciudad");
+        const ano_fundacion = document.getElementById("ano_fundacion");
+        const web = document.getElementById("web");
+        const telefono = document.getElementById("telefono");
+        const email = document.getElementById("email");
+        
+        // Variables de DLC
+        const titulo_dlc = document.getElementById("titulo_dlc");
+        const fecha_lanzamiento_dlc = document.getElementById("fecha_lanzamiento_dlc");
+        const precio_dlc = document.getElementById("precio_dlc");
+        
+        //Botones
+        const bnt_todo = document.getElementById("todo");
+        const bnt_insert = document.getElementById("insert");
+        const bnt_delete = document.getElementById("delete");
+        const bnt_update = document.getElementById("update");
+        const bnt_findOne = document.getElementById("buscarUno");
+
+
+        const resumen = document.getElementById("resumen");
+        
+        //Funcion auxiliar para obtener los datos del formulario
+
+        const getDatos = (accion) => ({
+            // Valores Videojuego (Corregidos IDs)
+            _id: _id.value,
+            titulo: titulo.value,
+            precio_base: precio_base.value,
+            fecha_lanzamiento: fecha_lanzamiento.value,
+            pegi: pegi.value,
+            motor: motor.value,
+            // Corregido: el ID era "es_multijugador", no "multijugador"
+            multijugador: document.getElementById("es_multijugador").checked ? "on" : "off", 
+            // Corregido: el ID era "descripcion", no "desc"
+            desc: document.getElementById("descripcion").value,
+
+            // Valores Estudio
+            nombre: nombre.value,
+            pais: pais.value,
+            ciudad: ciudad.value,
+            fundado_en: ano_fundacion.value,
+            web: web.value,
+            telefono: telefono.value,
+            email: email.value,
+
+            // Valores DLC
+            titulo_dlc: titulo_dlc.value,
+            fecha_lanzamiento_dlc: fecha_lanzamiento_dlc.value,
+            precio_dlc: precio_dlc.value,
+
+            accion: accion
+        });
+
+        // EXPRESIONES REGULARES
+        const regexEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const regexUrl = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w .-]*)*\/?$/;
+        const regexTelefono = /^[6789]\d{8}$/;
+
+        // --- UTILIDADES ---
+        function limpiarErrores() {
+            document.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+            document.querySelectorAll(".msg-error").forEach(el => el.remove());
+            resumen.style.display = "none";
+        }
+
+        function ponerError(elemento, mensaje) {
+            elemento.classList.add("error");
+            const p = document.createElement("p");
+            p.className = "msg-error";
+            p.textContent = mensaje;
+            elemento.insertAdjacentElement("afterend", p);
+        }
+
+        // --- VALIDACIÓN FORMULARIO VIDEOJUEGOS ---
+        form_videojuegos.addEventListener("submit", function (event) {
+            event.preventDefault();
+            limpiarErrores();
+            let valido = true;
+            let primerError = null;
+
+            if (titulo.value.trim() === "") {
+                ponerError(titulo, "El título es obligatorio.");
+                if (!primerError) primerError = titulo;
+                valido = false;
+            }
+            if (precio_base.value === "" || precio_base.value < 0) {
+                ponerError(precio_base, "El precio base debe ser 0 o superior.");
+                if (!primerError) primerError = precio_base;
+                valido = false;
+            }
+            if (id_estudio_v.value === "") {
+                ponerError(id_estudio_v, "El ID del estudio es obligatorio.");
+                if (!primerError) primerError = id_estudio_v;
+                valido = false;
+            }
+
+            if (!valido) {
+                primerError.focus();
+            } else {
+                resumen.style.display = "block";
+                resumen.innerHTML = `<h3>Videojuego Guardado</h3><p>Título: ${titulo.value}</p>`;
+            }
+        });
+
+        // --- VALIDACIÓN FORMULARIO ESTUDIO ---
+        form_estudio.addEventListener("submit", function (event) {
+            event.preventDefault();
+            limpiarErrores();
+            let valido = true;
+            let primerError = null;
+
+            if (nombre.value.trim() === "") {
+                ponerError(nombre, "El nombre del estudio es obligatorio.");
+                if (!primerError) primerError = nombre;
+                valido = false;
+            }
+            if (!regexTelefono.test(telefono.value)) {
+                ponerError(telefono, "Teléfono no válido (debe tener 9 dígitos y empezar por 6, 7, 8 o 9).");
+                if (!primerError) primerError = telefono;
+                valido = false;
+            }
+            if (!regexEmail.test(email.value)) {
+                ponerError(email, "El formato del email no es válido.");
+                if (!primerError) primerError = email;
+                valido = false;
+            }
+            if (web.value.trim() !== "" && !regexUrl.test(web.value)) {
+                ponerError(web, "La URL del sitio web no es válida.");
+                if (!primerError) primerError = web;
+                valido = false;
+            }
+
+            if (!valido) {
+                primerError.focus();
+            } else {
+                resumen.style.display = "block";
+                resumen.innerHTML = `<h3>Estudio Registrado</h3><p>Nombre: ${nombre.value}</p>`;
+            }
+        });
+
+        // --- VALIDACIÓN FORMULARIO DLC ---
+        form_dlc.addEventListener("submit", function (event) {
+            event.preventDefault();
+            limpiarErrores();
+            let valido = true;
+            let primerError = null;
+
+            if (titulo_dlc.value.trim() === "") {
+                ponerError(titulo_dlc, "El título del DLC es obligatorio.");
+                if (!primerError) primerError = titulo_dlc;
+                valido = false;
+            }
+            if (precio_dlc.value === "" || precio_dlc.value < 0) {
+                ponerError(precio_dlc, "Indica un precio válido para el DLC.");
+                if (!primerError) primerError = precio_dlc;
+                valido = false;
+            }
+
+            if (!valido) {
+                primerError.focus();
+            } else {
+                resumen.style.display = "block";
+                resumen.innerHTML = `<h3>DLC Añadido</h3><p>Título: ${titulo_dlc.value}</p>`;
+            }
+        });
+
+
+        function renderizarResumen(pedidos) {
+            resumen.style.display = "block";
+            let html = "<h3>Datos desde MongoDB</h3>"
+
+            pedidos.forEach(pedido =>{
+                html += `
+                    <div style="border-bottom: 1px solid #ccc; margin-bottom: 10px;">
+
+                        <p><strong>Titulo:</strong> ${pedido.titulo || 'N/A'}</p>
+                        <p><strong>Precio salida:</strong> ${pedido.precio_base || 'N/A'}</p>
+                        <p><strong>Pegi:</strong> ${pedido.pegi || 'N/A'}</p>
+                        <p><strong>Motor:</strong> ${pedido.motor || 'N/A'}</p>
+                        <p><strong>Multijugador:</strong> ${pedido.es_multijugador || 'N/A'}</p>
+                        <p><strong>Descripcion:</strong> ${pedido.descripcion || 'N/A'}</p>
+                        <p><strong>Fecha de Lanzamiento:</strong> ${pedido.fecha_lanzamiento || 'N/A'}</p>
+                    
+                    </div>
+                
+                `;
+            });
+
+            resumen.innerHTML = html;
+            
+        }
+
+        //Insertar datos
+         bnt_insert.addEventListener("click", async()=>{
+
+            resumen.innerText = "Enviando peticion al servidor";
+
+            const controler = new AbortController();
+            const timeoutMs = 3000;
+
+            const temporizador = setTimeout(()=>{
+                controler.abort();
+            }, timeoutMs);
+
+            try{
+
+                const respuesta = await fetch("crudEjercicio.php",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("insert"))
+                });
+                clearTimeout(temporizador);
+
+                const jsonRespuesta =await respuesta.json();
+
+                if(jsonRespuesta.status === "success"){
+                    renderizarResumen(jsonRespuesta.datos);
+                }
+                else {
+                    resumen.innerText = "Error en el servidor: " + jsonRespuesta.message;
+                }
+
+            }catch(error){
+
+                 clearTimeout(temporizador);
+
+                if (error.name === "AbortError") {
+                    resumen.innerText = "Tiempo de espera agotado: el servidor no respondió a tiempo.";
+                } else {
+                    resumen.innerText = "Error en la petición: " + error.message;
+                }
+
+            }
+
+        } )
+        //Insertar datos
+         bnt_update.addEventListener("click", async()=>{
+
+            resumen.innerText = "Enviando peticion al servidor";
+
+            const controler = new AbortController();
+            const timeoutMs = 3000;
+
+            const temporizador = setTimeout(()=>{
+                controler.abort();
+            }, timeoutMs);
+
+            try{
+
+                const respuesta = await fetch("crudEjercicio.php",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("update"))
+                });
+                clearTimeout(temporizador);
+
+                const jsonRespuesta =await respuesta.json();
+
+                if(jsonRespuesta.status === "success"){
+                    renderizarResumen(jsonRespuesta.datos);
+                }
+                else {
+                    resumen.innerText = "Error en el servidor: " + jsonRespuesta.message;
+                }
+
+            }catch(error){
+
+                 clearTimeout(temporizador);
+
+                if (error.name === "AbortError") {
+                    resumen.innerText = "Tiempo de espera agotado: el servidor no respondió a tiempo.";
+                } else {
+                    resumen.innerText = "Error en la petición: " + error.message;
+                }
+
+            }
+
+        } )
+        //Insertar datos
+         bnt_delete.addEventListener("click", async()=>{
+
+            resumen.innerText = "Enviando peticion al servidor";
+
+            const controler = new AbortController();
+            const timeoutMs = 3000;
+
+            const temporizador = setTimeout(()=>{
+                controler.abort();
+            }, timeoutMs);
+
+            try{
+
+                const respuesta = await fetch("crudEjercicio.php",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("delete"))
+                });
+                clearTimeout(temporizador);
+
+                const jsonRespuesta =await respuesta.json();
+
+                if(jsonRespuesta.status === "success"){
+                    renderizarResumen(jsonRespuesta.datos);
+                }
+                else {
+                    resumen.innerText = "Error en el servidor: " + jsonRespuesta.message;
+                }
+
+            }catch(error){
+
+                 clearTimeout(temporizador);
+
+                if (error.name === "AbortError") {
+                    resumen.innerText = "Tiempo de espera agotado: el servidor no respondió a tiempo.";
+                } else {
+                    resumen.innerText = "Error en la petición: " + error.message;
+                }
+
+            }
+
+        } )
+        //Buscar un dato
+         bnt_findOne.addEventListener("click", async()=>{
+
+            resumen.innerText = "Enviando peticion al servidor";
+
+            const controler = new AbortController();
+            const timeoutMs = 3000;
+
+            const temporizador = setTimeout(()=>{
+                controler.abort();
+            }, timeoutMs);
+
+            try{
+
+                const respuesta = await fetch("crudEjercicio.php",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("find"))
+                });
+                clearTimeout(temporizador);
+
+                const jsonRespuesta =await respuesta.json();
+
+                if(jsonRespuesta.status === "success"){
+                    renderizarResumen(jsonRespuesta.datos);
+                }
+                else {
+                    resumen.innerText = "Error en el servidor: " + jsonRespuesta.message;
+                }
+
+            }catch(error){
+
+                 clearTimeout(temporizador);
+
+                if (error.name === "AbortError") {
+                    resumen.innerText = "Tiempo de espera agotado: el servidor no respondió a tiempo.";
+                } else {
+                    resumen.innerText = "Error en la petición: " + error.message;
+                }
+
+            }
+
+        } )
+
+
+
+        // Solicitar todo los datos
+        bnt_todo.addEventListener("click", async()=>{
+
+            resumen.innerText = "Enviando peticion al servidor";
+
+            const controler = new AbortController();
+            const timeoutMs = 3000;
+
+            const temporizador = setTimeout(()=>{
+                controler.abort();
+            }, timeoutMs);
+
+            try{
+
+                const respuesta = await fetch("mostrarJuegosCompletos.php",{
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("mostrar_todo"))
+                });
+                clearTimeout(temporizador);
+
+                const jsonRespuesta =await respuesta.json();
+
+                if(jsonRespuesta.status === "success"){
+                    renderizarResumen(jsonRespuesta.datos);
+                }
+                else {
+                    resumen.innerText = "Error en el servidor: " + jsonRespuesta.message;
+                }
+
+            }catch(error){
+
+                 clearTimeout(temporizador);
+
+                if (error.name === "AbortError") {
+                    resumen.innerText = "Tiempo de espera agotado: el servidor no respondió a tiempo.";
+                } else {
+                    resumen.innerText = "Error en la petición: " + error.message;
+                }
+
+            }
+
+        } )
+    </script>
+    
+</body>
+</html>
