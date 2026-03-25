@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>CRUD simple en PHP</title>
+</head>
+<body>
+
+<h2>CRUD sencillo - Tabla videojuego</h2>
+
+<div id="info">
+
+</div>
+
+
+<form method="POST">
+
+    <label>ID (para actualizar/eliminar):</label><br>
+    <input type="number" id="id"><br><br>
+
+    <label>Título:</label><br>
+    <input type="text" id="titulo"><br><br>
+    <label>Precio:</label><br>
+    <input type="number" step="0.1" id="precio"><br><br>
+
+    <label>Fecha de Lanzamiento:</label><br>
+    <input type="text"  id="fecha_lanzamiento"><br><br>
+
+    <label>Pegi:</label><br>
+    <input type="text" id="pegi"><br><br>
+
+    <label>Motor:</label><br>
+    <input type="text"  id="motor"><br><br>
+
+    <label>Multijugador:</label><br>
+    <input type="checkbox"  id="multijugador"><br><br>
+
+    <label>Descripcion:</label><br>
+    <input type="text"  id="desc"><br><br>
+
+    <button type="submit"  id="add">Añadir</button>
+    <button type="submit" name="accion"  id="update">Actualizar</button>
+    <button type="submit" name="accion"  id="delete">Eliminar</button>
+    <button type="submit" name="accion" id="show">Mostrar</button>
+    <button type="submit" name="accion" id="show2">Mostrar Estudio</button>
+
+
+</form>
+<div id="mostrar">
+
+</div>
+
+<script>
+    // Referencias a los botones y contenedor
+    const bnt_add = document.getElementById("add");
+    const bnt_delete = document.getElementById("delete");
+    const bnt_update = document.getElementById("update");
+    const bnt_show = document.getElementById("show");
+    const bnt_show2 = document.getElementById("show2");
+    const mostrar = document.getElementById("mostrar");
+
+    // Función auxiliar para obtener datos actuales del formulario
+    const getDatos = (accion) => ({
+        id: document.getElementById("id").value,
+        titulo: document.getElementById("titulo").value,
+        precio: document.getElementById("precio").value,
+        fecha_lanzamiento: document.getElementById("fecha_lanzamiento").value,
+        pegi: document.getElementById("pegi").value,
+        motor: document.getElementById("motor").value,
+        multijugador: document.getElementById("multijugador").checked ? "on" : "off",
+        desc: document.getElementById("desc").value,
+        accion: accion
+    });
+
+    // He simplificado el renderizado para que veas los resultados
+    const pintarTabla = (datos) => {
+        if (datos.length === 0) {
+            mostrar.innerHTML = "No hay resultados.";
+            return;
+        }
+        let tabla = `
+            <table border='1' style='width:100%; border-collapse: collapse; margin-top: 20px;'>
+                <tr style='background-color: #ddd;'>
+                    <th>ID</th><th>Título</th><th>Precio</th><th>Lanzamiento</th>
+                    <th>Pegi</th><th>Motor</th><th>Multi</th><th>Descripción</th>
+                </tr>`;
+
+        datos.forEach(j => {
+            tabla += `
+            <tr>
+                <td>${j.id_videojuego}</td>
+                <td>${j.titulo}</td>
+                <td>${j.precio_base}€</td>
+                <td>${j.fecha_lanzamiento}</td>
+                <td>${j.pegi}</td>
+                <td>${j.motor}</td>
+                <td>${j.multijugador}</td>
+                <td>${j.descripcion}</td>
+            </tr>`;
+        });
+        tabla += "</table>";
+        mostrar.innerHTML = tabla;
+    };
+
+    const pintarTabla2 = (datos) => {
+        if (datos.length === 0) {
+            mostrar.innerHTML = "No han resultados";
+            return;
+        }
+        let tabla = `
+            <table border='1' style='width:100%; border-collapse: collapse; margin-top: 20px;'>
+                <tr style='background-color: #ddd;'>
+                    <th>Videojuego</th><th>Estudio</th><th>Genero</th>
+                </tr>`
+        datos.forEach(j => {
+            tabla += `
+            <tr>
+                <td>${j.v.titulo}</td>
+                <td>${j.estudio}</td>
+                <td>${j.generos}€</td>
+                
+            </tr>`;
+            
+        })
+        tabla += "</table>";
+        mostrar.innerHTML = tabla;
+    }
+
+
+    // --- EVENTOS (Tu esquema original corregido) ---
+
+    bnt_add.addEventListener("click", async (e) => {
+        e.preventDefault(); // Evita que el formulario recargue la página
+        try {
+            const resp = await fetch("crudSimple.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(getDatos("add"))
+            });
+            const data = await resp.json();
+            alert(data.mensaje || "Operación realizada");
+        } catch (error) { console.error(error); }
+    });
+
+    bnt_update.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+            const resp = await fetch("crudSimple.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(getDatos("update"))
+            });
+            const data = await resp.json();
+            alert("Actualizado");
+        } catch (error) { console.error(error); }
+    });
+
+    bnt_delete.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+            const resp = await fetch("crudSimple.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(getDatos("delete"))
+            });
+            alert("Borrado");
+        } catch (error) { console.error(error); }
+    });
+
+    bnt_show.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+            const resp = await fetch("crudSimple.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(getDatos("show"))
+            });
+            const data = await resp.json();
+            pintarTabla(data.juegos);
+        } catch (error) { console.error(error); }
+    });
+    bnt_show2.addEventListener("click", async (e) => {
+        e.preventDefault();
+        if(!(document.getElementById("id")==="")){
+
+            try {
+                const resp = await fetch("crudSimple.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("show2"))
+                });
+                const data = await resp.json();
+                pintarTabla2(data.juegos);
+            } catch (error) { console.error(error); }
+
+        }else if(!(document.getElementById("titulo")==="")){
+
+            try {
+                const resp = await fetch("crudSimple.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(getDatos("show3"))
+                });
+                const data = await resp.json();
+                pintarTabla2(data.juegos);
+            } catch (error) { console.error(error); }
+
+        }else{
+
+           mostrar.innerHTML = "Introduce Id o titulo del juego que quieras consultar"
+        }
+    });
+/*
+Crea un crud completo:
+    -Conecta cliente con servidor
+    -Permite añadir nuevos juegos a la tabla de videojuego
+        -debe mostrar la fila que se ha creado en la base de datos en cliente
+    -Permite modificar la base de datos y debe ser mostrada en cliente 
+    -Permite borrar y mostrar 
+    -Permite mostrar la tabla entera de videojuegos o solamente una fila 
+    en especifico selecionando por id o nombre del juego
+
+*/
+</script>
+
+    
+
+
+
+
+
+
+
+</script>
+
+</body>
+</html>
