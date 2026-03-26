@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Canje de Skins - Examen</title>
+</head>
+<body>
+    <h2>Canjear Skin</h2>
+    <input type="text" id="idUsuario" placeholder="ID Usuario">
+    <input type="text" id="idSkin" placeholder="ID Skin">
+    <button id="btnCanjear">Canjear Recompensa</button>
+
+    <div id="mensaje"></div>
+
+    <script>
+        const btn = document.getElementById("btnCanjear");
+        const mensaje = document.getElementById("mensaje");
+
+        btn.addEventListener("click", async () => {
+            const idU = document.getElementById("idUsuario").value;
+            const idS = document.getElementById("idSkin").value;
+
+            // TODO 1: Implementar Fetch POST hacia "procesar_canje.php"
+            // - Enviar los datos en formato JSON.
+            // - El cuerpo debe tener: { accion: "canjear", usuario: idU, skin: idS }
+            // - Manejar la respuesta y mostrar el campo "mensaje" del JSON en el div #mensaje.
+
+            const getDatos = {
+                usuario: idU,
+                skin: idS,
+                accion: "canjear"
+            };
+
+            try {
+                 const resp = await fetch("procesar_canje.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(getDatos)
+            });
+            if(resp.ok){
+                const data = await resp.json();
+                mensaje.innerText = data.mensaje;
+            }else {
+                mensaje.innerText = "Error en la comunicacion con el servidor";
+            }
+            
+                
+
+            } catch (error) {
+                console.error("Error en la petición");
+                mensaje.innerText = "Error de red o servidor no disponible";
+            }
+        });
+    </script>
+</body>
+</html>

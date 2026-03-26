@@ -147,3 +147,12 @@ async function fetchSeguro() {
   const data = await resp.json();
   return data;
 }
+
+/*
+Tipo de Envío,Método,Header Necesario,Recepción en PHP
+GET (URL),GET,Ninguno,$_GET['variable']
+JSON (Body),POST / PUT,"""Content-Type"": ""application/json""","json_decode(file_get_contents(""php://input""), true)"
+FormData,POST,Ninguno (Automático),$_POST['variable']
+Borrar,DELETE,Depende (URL o Body),$_GET o php://input
+
+*/
