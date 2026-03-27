@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Videojuegos ASIR</title>
+</head>
+<body>
+    <h2>Buscar en Catálogo (MongoDB)</h2>
+    <input type="number" id="precio_max" placeholder="Precio Máximo (Ej: 30)">
+    <input type="number" id="anio_min" placeholder="Año Mínimo (Ej: 2020)">
+    <button id="btnBuscar">Buscar Juegos</button>
+    <div id="estado"></div>
+    <div id="resultados"></div>
+
+    <script>
+        document.getElementById("btnBuscar").addEventListener("click", async () => {
+            const estado = document.getElementById("estado");
+            const resultados = document.getElementById("resultados");
+            estado.textContent = "Buscando...";
+            resultados.innerHTML = "";
+            
+            const datos = {
+                precio_max: document.getElementById("precio_max").value,
+                anio_min: document.getElementById("anio_min").value
+            };
+
+            // TODO 1: Crear el AbortController para cancelar la petición si tarda mucho.
+            
+            // TODO 2: Crear un setTimeout de 3000ms (3 segundos) que ejecute el abort() del controlador.
+            const controller = new AbortController();
+            const temporizador = setTimeout(() => {
+                controller.abort(); // Cancela la petición tras 3 segundos
+            }, 3000);
+
+
+            try {
+                // TODO 3: Hacer el fetch a "buscar_mongo.php".
+                // IMPORTANTE: Tienes que pasarle la 'signal' del AbortController en las opciones del fetch.
+                const resp = await fetch("buscar_mongo.php", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(datos),
+                    signal: controller.signal
+                })
+                // TODO 4: Si la respuesta llega a tiempo, limpiar el temporizador (clearTimeout).
+                clearTimeout(temporizador);
+
+                const juegos = await resp.json();
+                // TODO 5: Leer el JSON y mostrar los títulos de los juegos devueltos.
+
+                if (juegos.length === 0){
+                    estado.textContent = "No se encontraron juegos.";
+
+                }
+                else{
+                    juegos.forEach(j => {
+                        const p = document.createElement("p");
+                        p.textContent = `${j.titulo} - ${j.precio_base}€ (${j.fecha_lanzamiento})`;
+                        resultados.appendChild(p);                    
+                    });
+                }
+            } catch (error) {
+                // TODO 6: Manejar el error. Si el error es por el AbortController (error.name === "AbortError"),
+                // mostrar en 'estado' el mensaje "Tiempo de espera agotado".
+                if (error.name === "AbortError") {
+                    estado.textContent = " Tiempo de espera agotado (Servidor lento).";
+                } else {
+                    estado.textContent = "Error: " + error.message;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
