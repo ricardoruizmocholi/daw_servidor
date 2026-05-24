@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Examen Final - Práctica</title>
+</head>
+<body>
+    <h2>Panel de Control Ultra-Tech</h2>
+    <form id="miForm">
+        <input type="number" id="id_p" placeholder="ID Producto (MySQL)">
+        <input type="text" id="nombre" placeholder="Nombre">
+        <input type="number" id="precio" placeholder="Precio">
+        <input type="number" id="stock" placeholder="Stock">
+        
+        <select id="campo_dinamico">
+            <option value="precio">Precio</option>
+            <option value="stock">Stock</option>
+            <option value="categoria">Categoría</option>
+        </select>
+
+        <h4>Especificaciones (Mongo)</h4>
+        <input type="text" id="marca" placeholder="Marca">
+        <input type="text" id="consumo" placeholder="Consumo">
+        
+        <br><br>
+        <button type="button" onclick="operacion('compra')">Compra (Transacción)</button>
+        <button type="button" onclick="operacion('dinamico')">Update Dinámico</button>
+        <button type="button" onclick="operacion('mongo')">Upsert Mongo</button>
+        <button type="button" onclick="operacion('eliminar')">ELIMINAR TODO</button>
+    </form>
+
+    <pre id="resultado"></pre>
+
+    <script>
+        async function operacion(tipo) {
+            // TODO 1: Recoger todos los valores de los inputs.
+            const resultado = document.getElementById("resultado");
+
+            
+            // TODO 2: Crear el objeto JSON con la estructura:
+            // { accion: tipo, id: ..., nombre: ..., precio: ..., stock: ..., campo: ..., specs: { marca: ..., consumo: ... } }
+            const datos = {
+                accion : tipo,
+                id: document.getElementById("id_p").value,
+                nombre: document.getElementById("nombre").value,
+                precio: document.getElementById("precio").value,
+                stock: document.getElementById("stock").value,
+                campo: document.getElementById("campo_dinamico").value,
+                specs:{
+                    marca: document.getElementById("marca").value,
+                    consumo: document.getElementById("consumo").value
+                }
+            };
+
+            // TODO 3: Hacer el FETCH POST a "servidor_final.php".
+            // No olvides los headers y el JSON.stringify.
+
+            const resp = await fetch("servidor_final.php",{
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(datos)
+            });
+
+            const res = await resp.json();
+            resultado.innerText = JSON.stringify(res,null,2);
+        }
+    </script>
+</body>
+</html>
