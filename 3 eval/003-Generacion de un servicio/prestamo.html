@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Biblioteca — Consulta de Préstamo SOAP</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+        pre  { background: #f4f4f4; padding: 1rem; overflow-x: auto; white-space: pre-wrap; border-radius: 4px; font-size: 0.85rem; }
+        label { display: block; margin-top: 0.75rem; font-weight: bold; }
+        input, select { width: 100%; padding: 0.4rem; margin-top: 0.2rem; box-sizing: border-box; }
+        button { margin-top: 1rem; padding: 0.5rem 1.5rem; cursor: pointer; }
+        .resultado-ok  { color: #1a6b2a; font-weight: bold; font-size: 1.1rem; }
+        .resultado-no  { color: #8a4000; font-weight: bold; font-size: 1.1rem; }
+        .resultado-err { color: #b00020; font-weight: bold; }
+        .info-box { background: #e8f4fd; border-left: 4px solid #2196F3; padding: 0.75rem 1rem; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Biblioteca — Consulta de Préstamo</h1>
+
+    <div class="info-box">
+        <strong>¿Qué hace este cliente?</strong><br>
+        Envía una petición SOAP al servicio de biblioteca con un <strong>token de sesión en el Header</strong>
+        y los datos del préstamo en el Body. El servidor primero valida el token y luego consulta
+        si el libro puede prestarse. Es el patrón "portero + servicio" que se usa en APIs reales.
+    </div>
+
+    <p>
+        <a href="prestamo.wsdl" target="_blank">Ver contrato WSDL del servicio</a>
+    </p>
+
+    <h2>Datos de sesión (Header SOAP)</h2>
+    <p style="font-size:0.9rem; color:#555">
+        El token va en el <code>&lt;soap:Header&gt;</code>, no en el Body.
+        Tokens válidos de prueba: <code>ABC-123</code>, <code>XYZ-789</code>, <code>CEAC-2025</code>
+    </p>
+
+    <label for="token">Token de sesión:</label>
+    <input type="text" id="token" value="ABC-123" placeholder="Ej: ABC-123">
+
+    <h2>Datos de la consulta (Body SOAP)</h2>
+
+    <label for="dni">DNI del usuario:</label>
+    <input type="text" id="dni" value="12345678A" placeholder="Ej: 12345678A">
+
+    <label for="codigoLibro">Código del libro:</label>
+    <!-- Algunos códigos de prueba: LIB-001 (disponible), BAJA-001 (no disponible) -->
+    <select id="codigoLibro">
+        <option value="LIB-001">LIB-001 — El Quijote (disponible)</option>
+        <option value="LIB-042">LIB-042 — Cien años de soledad (disponible)</option>
+        <option value="BAJA-001">BAJA-001 — Libro dado de baja (no disponible)</option>
+        <option value="ROTO-042">ROTO-042 — Libro deteriorado (no disponible)</option>
+    </select>
+
+    <button id="btnConsultar">Consultar préstamo</button>
+
+    <h2>Resultado</h2>
+    <p id="resultado"></p>
+
+    <h2>Petición SOAP enviada</h2>
+    <pre id="peticion">Aún no se ha enviado ninguna petición.</pre>
+
+    <h2>Respuesta SOAP recibida</h2>
+    <pre id="respuesta">Aquí aparecerá el XML de respuesta del servidor.</pre>
+
+    <script>
+        document.getElementById("btnConsultar").addEventListener("click", async () => {
+            const token       = document.getElementById("token").value.trim();
+            const dni         = document.getElementById("dni").value.trim();
+            const codigoLibro = document.getElementById("codigoLibro").value;
+
+            document.getElementById("resultado").innerText = "";
+            document.getElementById("resultado").className = "";
+
+            // ──────────────────────────────────────────────────────────────
+            // Validación básica en el cliente
+            // (El servidor también valida — nunca confíes solo en el cliente)
+            // ──────────────────────────────────────────────────────────────
+            if (!token) {
+                document.getElementById("resultado").innerText = "El token de sesión no puede estar vacío.";
+                document.getElementById("resultado").className = "resultado-err";
+                return;
+            }
+
+            if (!dni) {
+                document.getElementById("resultado").innerText = "El DNI no puede estar vacío.";
+                document.getElementById("resultado").className = "resultado-err";
+                return;
+            }
+
+            // ──────────────────────────────────────────────────────────────
+            // Construcción del XML SOAP con Header y Body
+            //
+            // Estructura:
+            //   <Envelope>
+            //     <Header> → token de sesión (metadato — "quién soy")
+            //     <Body>   → la operación real ("qué quiero hacer")
+            //   </Envelope>
+            //
+            // El servidor leerá el Header PRIMERO para verificar el token
+            // antes de procesar el Body.
+            // ──────────────────────────────────────────────────────────────
+            const xmlSOAP = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Header>
+    <sesion>
+      <token>${escapeXml(token)}</token>
+    </sesion>
+  </soap:Header>
+  <soap:Body>
+    <consultarPrestamo>
+      <dni>${escapeXml(dni)}</dni>
+      <codigoLibro>${escapeXml(codigoLibro)}</codigoLibro>
+    </consultarPrestamo>
+  </soap:Body>
+</soap:Envelope>`;
+
+            document.getElementById("peticion").innerText = xmlSOAP;
+            document.getElementById("respuesta").innerText = "Consultando al servidor...";
+
+            try {
+                // SOAP siempre usa POST — el XML va en el Body HTTP
+                const respuestaHttp = await fetch("prestamo.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/xml; charset=utf-8",
+                        "Accept": "text/xml"
+                    },
+                    body: xmlSOAP
+                });
+
+                const textoRespuesta = await respuestaHttp.text();
+                document.getElementById("respuesta").innerText = textoRespuesta;
+
+                // Parseamos el XML para extraer los valores legibles
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(textoRespuesta, "text/xml");
+
+                // ── ¿Hubo un error SOAP (Fault)? ──
+                const nodoFault = xml.getElementsByTagName("faultstring")[0];
+                if (nodoFault) {
+                    document.getElementById("resultado").innerText =
+                        "Error SOAP: " + nodoFault.textContent;
+                    document.getElementById("resultado").className = "resultado-err";
+                    return;
+                }
+
+                // ── Respuesta exitosa: puede_prestar + mensaje + dias_maximos ──
+                const nodoPuede = xml.getElementsByTagName("puede_prestar")[0];
+                const nodoMensaje = xml.getElementsByTagName("mensaje")[0];
+                const nodoDias = xml.getElementsByTagName("dias_maximos")[0];
+
+                if (nodoPuede && nodoMensaje) {
+                    const puedePRestar = nodoPuede.textContent === "true";
+                    const mensaje = nodoMensaje.textContent;
+                    const dias = nodoDias ? nodoDias.textContent : "–";
+
+                    if (puedePRestar) {
+                        document.getElementById("resultado").innerText =
+                            `✔ AUTORIZADO — ${mensaje} (plazo: ${dias} días)`;
+                        document.getElementById("resultado").className = "resultado-ok";
+                    } else {
+                        document.getElementById("resultado").innerText =
+                            `✖ NO AUTORIZADO — ${mensaje}`;
+                        document.getElementById("resultado").className = "resultado-no";
+                    }
+                } else {
+                    document.getElementById("resultado").innerText =
+                        "No se pudo interpretar la respuesta del servidor.";
+                    document.getElementById("resultado").className = "resultado-err";
+                }
+
+            } catch (errorRed) {
+                document.getElementById("respuesta").innerText = "Error de red — ¿está el servidor PHP arrancado?";
+                document.getElementById("resultado").innerText = String(errorRed);
+                document.getElementById("resultado").className = "resultado-err";
+            }
+        });
+
+        // Escapa caracteres especiales XML para evitar romper el sobre SOAP
+        // si el usuario escribe caracteres como < > & ' " en el formulario
+        function escapeXml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&apos;");
+        }
+    </script>
+
+</body>
+</html>

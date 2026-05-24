@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WSDL del Servicio de Validación de Acceso a Examen
+
+    ¿Qué hace este servicio?
+    ─────────────────────────
+    Recibe los datos de un alumno (nombre, edad, si está matriculado)
+    y devuelve si está autorizado a presentarse al examen y un mensaje explicativo.
+
+    Regla de negocio: un alumno puede acceder al examen si
+      - Tiene más de 16 años  (edad > 16)
+      - Está matriculado       (matriculado = true)
+    Si falta cualquiera de las dos condiciones, el acceso se deniega.
+
+    Estructura de la operación:
+    ──────────────────────────────
+    Petición (validarAcceso):
+      - nombre      → string   (nombre del alumno)
+      - edad        → int      (edad en años)
+      - matriculado → boolean  (si está o no matriculado en el curso)
+
+    Respuesta (validarAccesoResponse):
+      - permitido → boolean  (true si puede acceder, false si no)
+      - mensaje   → string   (explicación del resultado)
+
+    IMPORTANTE:
+    El resultado "no permitido" devuelve una RESPUESTA NORMAL (permitido=false + mensaje),
+    NO un SOAP Fault. Un Fault es para errores de protocolo o datos mal formados,
+    no para resultados de negocio legítimos. Esta distinción es fundamental en SOAP.
+-->
+<definitions
+    name="ServicioAccesoExamen"
+    targetNamespace="urn:ServicioAccesoExamen"
+    xmlns:tns="urn:ServicioAccesoExamen"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+    <!-- 1. TYPES — Esquema de datos de entrada y salida -->
+    <types>
+        <xsd:schema targetNamespace="urn:ServicioAccesoExamen">
+
+            <!-- Petición: los tres datos del alumno -->
+            <xsd:element name="validarAcceso">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="nombre"      type="xsd:string"/>
+                        <xsd:element name="edad"        type="xsd:int"/>
+                        <xsd:element name="matriculado" type="xsd:boolean"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <!-- Respuesta: autorizado sí/no + mensaje explicativo -->
+            <xsd:element name="validarAccesoResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="permitido" type="xsd:boolean"/>
+                        <xsd:element name="mensaje"   type="xsd:string"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+        </xsd:schema>
+    </types>
+
+    <!-- 2. MESSAGES — Los "sobres" de petición y respuesta -->
+    <message name="validarAccesoRequest">
+        <part name="parameters" element="tns:validarAcceso"/>
+    </message>
+
+    <message name="validarAccesoResponse">
+        <part name="parameters" element="tns:validarAccesoResponse"/>
+    </message>
+
+    <!-- 3. PORT TYPE — Catálogo de operaciones disponibles -->
+    <portType name="ServicioAccesoExamenPortType">
+        <operation name="validarAcceso">
+            <input  message="tns:validarAccesoRequest"/>
+            <output message="tns:validarAccesoResponse"/>
+        </operation>
+    </portType>
+
+    <!-- 4. BINDING — Protocolo de transporte: SOAP sobre HTTP -->
+    <binding name="ServicioAccesoExamenBinding" type="tns:ServicioAccesoExamenPortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+        <operation name="validarAcceso">
+            <soap:operation soapAction="urn:ServicioAccesoExamen#validarAcceso"/>
+            <input><soap:body use="literal"/></input>
+            <output><soap:body use="literal"/></output>
+        </operation>
+    </binding>
+
+    <!-- 5. SERVICE — URL donde está el servidor PHP -->
+    <service name="ServicioAccesoExamenService">
+        <port name="ServicioAccesoExamenPort" binding="tns:ServicioAccesoExamenBinding">
+            <soap:address location="http://localhost/daw2servidor/004-interfaces de un servicio/accesoAExamen.php"/>
+        </port>
+    </service>
+
+</definitions>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Acceso a Examen — Servicio SOAP</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+        pre  { background: #f4f4f4; padding: 1rem; overflow-x: auto; white-space: pre-wrap; border-radius: 4px; font-size: 0.85rem; }
+        label  { display: block; margin-top: 0.75rem; font-weight: bold; }
+        input, select { width: 100%; padding: 0.4rem; margin-top: 0.2rem; box-sizing: border-box; }
+        button { margin-top: 1rem; padding: 0.5rem 1.5rem; cursor: pointer; }
+        .permitido  { background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 0.75rem; font-weight: bold; color: #1b5e20; }
+        .denegado   { background: #fff3e0; border-left: 4px solid #e65100; padding: 0.75rem; font-weight: bold; color: #bf360c; }
+        .error-soap { background: #fce4ec; border-left: 4px solid #b71c1c; padding: 0.75rem; font-weight: bold; color: #b71c1c; }
+        .info-box   { background: #e8f4fd; border-left: 4px solid #2196F3; padding: 0.75rem 1rem; margin: 1rem 0; }
+    </style>
+</head>
+<body>
+
+    <h1>Validación de Acceso a Examen</h1>
+
+    <div class="info-box">
+        <strong>¿Qué hace este cliente?</strong><br>
+        Construye un XML SOAP con los datos del alumno y lo envía al servicio PHP.
+        El servidor aplica las reglas de acceso y devuelve si está permitido o no.
+        Fíjate en la diferencia entre un <strong>SOAP Fault</strong> (datos inválidos)
+        y una <strong>respuesta negativa</strong> (datos válidos pero alumno no autorizado).
+    </div>
+
+    <p>
+        <a href="accesoAExamen.wsdl" target="_blank">Ver contrato WSDL del servicio</a>
+    </p>
+
+    <h2>Datos del alumno</h2>
+
+    <label for="nombre">Nombre del alumno:</label>
+    <input type="text" id="nombre" value="María García" placeholder="Nombre completo">
+
+    <label for="edad">Edad:</label>
+    <input type="number" id="edad" value="18" min="1" max="99">
+
+    <label for="matriculado">¿Está matriculado/a?</label>
+    <select id="matriculado">
+        <option value="true">Sí, está matriculado/a</option>
+        <option value="false">No, no está matriculado/a</option>
+    </select>
+
+    <button id="btnValidar">Validar acceso al examen</button>
+
+    <h2>Resultado</h2>
+    <div id="resultado" style="display:none"></div>
+
+    <h2>Petición SOAP enviada</h2>
+    <pre id="peticion">Aún no se ha enviado ninguna petición.</pre>
+
+    <h2>Respuesta SOAP recibida</h2>
+    <pre id="respuesta">Aquí aparecerá el XML de respuesta del servidor.</pre>
+
+    <script>
+        document.getElementById("btnValidar").addEventListener("click", async () => {
+            const nombre      = document.getElementById("nombre").value.trim();
+            const edad        = document.getElementById("edad").value;
+            const matriculado = document.getElementById("matriculado").value; // "true" o "false"
+
+            // Ocultamos el resultado anterior
+            const divResultado = document.getElementById("resultado");
+            divResultado.style.display = "none";
+            divResultado.className = "";
+            divResultado.innerText = "";
+
+            // Validación mínima en el cliente (el servidor también valida)
+            if (!nombre) {
+                mostrarResultado("El nombre no puede estar vacío.", "error-soap");
+                return;
+            }
+
+            if (!edad || parseInt(edad) <= 0) {
+                mostrarResultado("La edad debe ser un número positivo.", "error-soap");
+                return;
+            }
+
+            // ──────────────────────────────────────────────────────────────
+            // Construcción del XML SOAP
+            //
+            // Nota: matriculado ya es "true" o "false" (string) — justo lo que
+            // espera el tipo xsd:boolean en el WSDL. No enviamos 1/0 ni Sí/No.
+            // ──────────────────────────────────────────────────────────────
+            const xmlSOAP = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <validarAcceso>
+      <nombre>${escapeXml(nombre)}</nombre>
+      <edad>${parseInt(edad)}</edad>
+      <matriculado>${matriculado}</matriculado>
+    </validarAcceso>
+  </soap:Body>
+</soap:Envelope>`;
+
+            document.getElementById("peticion").innerText = xmlSOAP;
+            document.getElementById("respuesta").innerText = "Consultando al servidor...";
+
+            try {
+                // SOAP siempre POST, siempre text/xml
+                const respuestaHttp = await fetch("accesoAExamen.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/xml; charset=utf-8",
+                        "Accept": "text/xml"
+                    },
+                    body: xmlSOAP
+                });
+
+                const textoRespuesta = await respuestaHttp.text();
+                document.getElementById("respuesta").innerText = textoRespuesta;
+
+                // Parseamos el XML de la respuesta
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(textoRespuesta, "text/xml");
+
+                // ── ¿Hubo SOAP Fault? → los datos enviados eran incorrectos ──
+                const nodoFault = xml.getElementsByTagName("faultstring")[0];
+                if (nodoFault) {
+                    mostrarResultado(
+                        "SOAP Fault (datos inválidos): " + nodoFault.textContent,
+                        "error-soap"
+                    );
+                    return;
+                }
+
+                // ── Respuesta normal: permitido + mensaje ──
+                const nodoPermitido = xml.getElementsByTagName("permitido")[0];
+                const nodoMensaje   = xml.getElementsByTagName("mensaje")[0];
+
+                if (nodoPermitido && nodoMensaje) {
+                    const permitido = nodoPermitido.textContent === "true";
+                    const mensaje   = nodoMensaje.textContent;
+
+                    // Aunque el resultado sea negativo, esto es una respuesta de negocio,
+                    // no un error — por eso el servidor no devolvió un Fault
+                    mostrarResultado(
+                        (permitido ? "✔ ACCESO AUTORIZADO" : "✖ ACCESO DENEGADO") + " — " + mensaje,
+                        permitido ? "permitido" : "denegado"
+                    );
+                } else {
+                    mostrarResultado("No se pudo interpretar la respuesta del servidor.", "error-soap");
+                }
+
+            } catch (errorRed) {
+                document.getElementById("respuesta").innerText = "Error de red — ¿está el servidor PHP arrancado?";
+                mostrarResultado(String(errorRed), "error-soap");
+            }
+        });
+
+        function mostrarResultado(texto, clase) {
+            const div = document.getElementById("resultado");
+            div.style.display = "block";
+            div.className = clase;
+            div.innerText = texto;
+        }
+
+        function escapeXml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&apos;");
+        }
+    </script>
+
+</body>
+</html>

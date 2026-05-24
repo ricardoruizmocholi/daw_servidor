@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WSDL de la Calculadora SOAP (ampliada con multiplicar y dividir)
+
+    ¿Qué es un WSDL?
+    ─────────────────
+    El WSDL (Web Services Description Language) es el "contrato" del servicio.
+    Define exactamente:
+      - Qué operaciones existen (sumar, restar, multiplicar, dividir)
+      - Qué parámetros recibe cada una y de qué tipo son (xsd:double)
+      - Qué devuelve cada una (resultado, o resultado+resto para dividir)
+      - Dónde está el servicio (la URL del PHP)
+
+    Si esto fuera un restaurante, el WSDL sería la carta oficial con precios,
+    ingredientes y alergenos — antes de pedir, consultas la carta para saber qué puedes pedir.
+
+    Estructura de un WSDL:
+    ─────────────────────────
+    1. <types>     → Los tipos de datos (como un esquema XSD)
+    2. <message>   → Los "sobres" de entrada y salida de cada operación
+    3. <portType>  → Las operaciones disponibles (como los métodos de una interfaz)
+    4. <binding>   → Cómo se usa el protocolo (SOAP sobre HTTP)
+    5. <service>   → La URL donde está el servicio
+
+    IMPORTANTE: dividir es especial — su respuesta tiene DOS campos (resultado Y resto),
+    mientras que el resto de operaciones solo tienen uno (resultado).
+-->
+<definitions
+    name="CalculadoraSOAP"
+    targetNamespace="urn:CalculadoraSOAP"
+    xmlns:tns="urn:CalculadoraSOAP"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+    <!-- ══════════════════════════════════════════════════════════
+         1. TYPES — Define los tipos de datos de entrada y salida
+         Es como definir la estructura de cada plato de la carta.
+         ══════════════════════════════════════════════════════════ -->
+    <types>
+        <xsd:schema targetNamespace="urn:CalculadoraSOAP">
+
+            <!-- SUMAR: recibe dos números, devuelve uno -->
+            <xsd:element name="sumar">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="a" type="xsd:double"/>
+                        <xsd:element name="b" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="sumarResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="resultado" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <!-- RESTAR: misma estructura que sumar -->
+            <xsd:element name="restar">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="a" type="xsd:double"/>
+                        <xsd:element name="b" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="restarResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="resultado" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <!-- MULTIPLICAR: misma estructura que sumar y restar -->
+            <xsd:element name="multiplicar">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="a" type="xsd:double"/>
+                        <xsd:element name="b" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="multiplicarResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="resultado" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <!-- DIVIDIR: la petición es igual (a y b), pero la RESPUESTA es diferente:
+                 devuelve DOS campos — resultado (cociente entero) y resto (fmod).
+                 Esto es lo que hace que dividir sea un caso especial en el PHP también. -->
+            <xsd:element name="dividir">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <xsd:element name="a" type="xsd:double"/>
+                        <xsd:element name="b" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+            <xsd:element name="dividirResponse">
+                <xsd:complexType>
+                    <xsd:sequence>
+                        <!-- El cociente entero: 7 ÷ 2 = 3 -->
+                        <xsd:element name="resultado" type="xsd:double"/>
+                        <!-- El resto: 7 ÷ 2 → resto 1 -->
+                        <xsd:element name="resto" type="xsd:double"/>
+                    </xsd:sequence>
+                </xsd:complexType>
+            </xsd:element>
+
+        </xsd:schema>
+    </types>
+
+    <!-- ══════════════════════════════════════════════════════════
+         2. MESSAGES — Define los "sobres" de entrada y salida.
+         Cada operación tiene un mensaje de entrada y uno de salida.
+         ══════════════════════════════════════════════════════════ -->
+    <message name="sumarRequest">
+        <part name="parameters" element="tns:sumar"/>
+    </message>
+    <message name="sumarResponse">
+        <part name="parameters" element="tns:sumarResponse"/>
+    </message>
+
+    <message name="restarRequest">
+        <part name="parameters" element="tns:restar"/>
+    </message>
+    <message name="restarResponse">
+        <part name="parameters" element="tns:restarResponse"/>
+    </message>
+
+    <message name="multiplicarRequest">
+        <part name="parameters" element="tns:multiplicar"/>
+    </message>
+    <message name="multiplicarResponse">
+        <part name="parameters" element="tns:multiplicarResponse"/>
+    </message>
+
+    <message name="dividirRequest">
+        <part name="parameters" element="tns:dividir"/>
+    </message>
+    <message name="dividirResponse">
+        <part name="parameters" element="tns:dividirResponse"/>
+    </message>
+
+    <!-- ══════════════════════════════════════════════════════════
+         3. PORT TYPE — Lista las operaciones disponibles.
+         Es como el índice de la carta: "estas son las operaciones que puedes pedir".
+         Cada operación tiene un input (lo que el cliente envía)
+         y un output (lo que el servidor devuelve).
+         ══════════════════════════════════════════════════════════ -->
+    <portType name="CalculadoraSOAPPortType">
+        <operation name="sumar">
+            <input message="tns:sumarRequest"/>
+            <output message="tns:sumarResponse"/>
+        </operation>
+
+        <operation name="restar">
+            <input message="tns:restarRequest"/>
+            <output message="tns:restarResponse"/>
+        </operation>
+
+        <operation name="multiplicar">
+            <input message="tns:multiplicarRequest"/>
+            <output message="tns:multiplicarResponse"/>
+        </operation>
+
+        <operation name="dividir">
+            <input message="tns:dividirRequest"/>
+            <output message="tns:dividirResponse"/>
+        </operation>
+    </portType>
+
+    <!-- ══════════════════════════════════════════════════════════
+         4. BINDING — Dice cómo se usa el protocolo.
+         "document/literal" significa que el Body lleva el XML
+         tal cual está definido en los types (sin codificaciones raras).
+         ══════════════════════════════════════════════════════════ -->
+    <binding name="CalculadoraSOAPBinding" type="tns:CalculadoraSOAPPortType">
+        <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+        <operation name="sumar">
+            <soap:operation soapAction="urn:CalculadoraSOAP#sumar"/>
+            <input><soap:body use="literal"/></input>
+            <output><soap:body use="literal"/></output>
+        </operation>
+
+        <operation name="restar">
+            <soap:operation soapAction="urn:CalculadoraSOAP#restar"/>
+            <input><soap:body use="literal"/></input>
+            <output><soap:body use="literal"/></output>
+        </operation>
+
+        <operation name="multiplicar">
+            <soap:operation soapAction="urn:CalculadoraSOAP#multiplicar"/>
+            <input><soap:body use="literal"/></input>
+            <output><soap:body use="literal"/></output>
+        </operation>
+
+        <operation name="dividir">
+            <soap:operation soapAction="urn:CalculadoraSOAP#dividir"/>
+            <input><soap:body use="literal"/></input>
+            <output><soap:body use="literal"/></output>
+        </operation>
+    </binding>
+
+    <!-- ══════════════════════════════════════════════════════════
+         5. SERVICE — La dirección donde está el servicio.
+         Sin esto, el cliente no sabe a dónde enviar las peticiones.
+         ══════════════════════════════════════════════════════════ -->
+    <service name="CalculadoraSOAPService">
+        <port name="CalculadoraSOAPPort" binding="tns:CalculadoraSOAPBinding">
+            <soap:address location="http://localhost/daw2servidor/007-Programación de servicios web/002-Estándares y arquitecturas actuales. Formatos de intercambio de datos/002-Ejercicios/calculadora-soap.php"/>
+        </port>
+    </service>
+
+</definitions>

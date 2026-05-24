@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora SOAP — ampliada</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+        pre  { background: #f4f4f4; padding: 1rem; overflow-x: auto; white-space: pre-wrap; border-radius: 4px; }
+        label { display: block; margin-top: 0.75rem; font-weight: bold; }
+        input, select { width: 100%; padding: 0.4rem; margin-top: 0.2rem; box-sizing: border-box; }
+        button { margin-top: 1rem; padding: 0.5rem 1.5rem; cursor: pointer; }
+        #resultado { font-size: 1.2rem; font-weight: bold; color: #1a6b2a; }
+        #error     { color: #b00020; font-weight: bold; }
+        /* El bloque de división se muestra solo cuando la operación es dividir */
+        #resultadoDivision { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>Calculadora SOAP — ampliada</h1>
+
+    <p>
+        Este cliente construye un XML SOAP a mano, lo envía al servidor PHP con <code>fetch()</code>
+        y parsea la respuesta XML. La división devuelve <strong>dos valores</strong> (cociente y resto),
+        lo que demuestra por qué necesita una respuesta SOAP diferente al resto de operaciones.
+    </p>
+
+    <p>
+        <a href="calculadora.wsdl" target="_blank">Ver contrato WSDL del servicio</a>
+    </p>
+
+    <label for="operacion">Operación:</label>
+    <select id="operacion">
+        <option value="sumar">sumar</option>
+        <option value="restar">restar</option>
+        <option value="multiplicar">multiplicar</option>
+        <option value="dividir">dividir (devuelve cociente Y resto)</option>
+    </select>
+
+    <label for="a">Primer número (a):</label>
+    <input type="number" id="a" value="10" step="any">
+
+    <label for="b">Segundo número (b):</label>
+    <input type="number" id="b" value="3" step="any">
+
+    <button id="btnEnviar">Enviar petición SOAP</button>
+
+    <h2>Resultado</h2>
+
+    <!-- Para operaciones normales (sumar, restar, multiplicar) -->
+    <p id="resultado"></p>
+
+    <!-- Para dividir, que devuelve dos valores -->
+    <div id="resultadoDivision">
+        <p>Cociente (parte entera): <span id="cociente"></span></p>
+        <p>Resto: <span id="resto"></span></p>
+    </div>
+
+    <p id="error"></p>
+
+    <h2>Petición SOAP enviada</h2>
+    <pre id="peticion">Aún no se ha enviado ninguna petición.</pre>
+
+    <h2>Respuesta SOAP recibida</h2>
+    <pre id="respuesta">Aquí aparecerá el XML de respuesta del servidor.</pre>
+
+    <script>
+        document.getElementById("btnEnviar").addEventListener("click", async () => {
+            // Leemos los valores del formulario
+            const operacion = document.getElementById("operacion").value;
+            const a = document.getElementById("a").value;
+            const b = document.getElementById("b").value;
+
+            // Limpiamos los resultados anteriores antes de mostrar el nuevo
+            document.getElementById("resultado").innerText = "";
+            document.getElementById("error").innerText = "";
+            document.getElementById("resultadoDivision").style.display = "none";
+            document.getElementById("cociente").innerText = "";
+            document.getElementById("resto").innerText = "";
+
+            // Construimos el XML SOAP manualmente con un template literal.
+            // El nombre de la etiqueta dentro del Body es la operación: <sumar>, <dividir>...
+            // Eso es lo que lee el servidor PHP para saber qué tiene que calcular.
+            const xmlSOAP = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <${operacion}>
+      <a>${a}</a>
+      <b>${b}</b>
+    </${operacion}>
+  </soap:Body>
+</soap:Envelope>`;
+
+            // Mostramos la petición para que el alumno vea el XML que se envía
+            document.getElementById("peticion").innerText = xmlSOAP;
+            document.getElementById("respuesta").innerText = "Enviando petición al servidor...";
+
+            try {
+                // Enviamos el XML al servidor PHP con POST y Content-Type text/xml
+                // (SOAP SIEMPRE usa POST — el verbo de la operación va dentro del XML, no en la URL)
+                const respuestaHttp = await fetch("calculadora-soap.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/xml; charset=utf-8",
+                        "Accept": "text/xml"
+                    },
+                    body: xmlSOAP
+                });
+
+                // Leemos la respuesta como texto plano (es XML, no JSON)
+                const textoRespuesta = await respuestaHttp.text();
+                document.getElementById("respuesta").innerText = textoRespuesta;
+
+                // Parseamos el XML de la respuesta para extraer los valores
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(textoRespuesta, "text/xml");
+
+                // Comprobamos si hay un SOAP Fault (error del servidor)
+                const nodoFault = xml.getElementsByTagName("faultstring")[0];
+                if (nodoFault) {
+                    document.getElementById("error").innerText =
+                        "Error SOAP del servidor: " + nodoFault.textContent;
+                    return; // Paramos aquí — no hay resultado que mostrar
+                }
+
+                // La división devuelve DOS nodos (resultado + resto) — caso especial
+                if (operacion === "dividir") {
+                    const nodoResultado = xml.getElementsByTagName("resultado")[0];
+                    const nodoResto = xml.getElementsByTagName("resto")[0];
+
+                    if (nodoResultado && nodoResto) {
+                        // Mostramos el bloque especial de división
+                        document.getElementById("resultadoDivision").style.display = "block";
+                        document.getElementById("cociente").innerText = nodoResultado.textContent;
+                        document.getElementById("resto").innerText = nodoResto.textContent;
+                    }
+                } else {
+                    // Sumar, restar y multiplicar solo devuelven un nodo <resultado>
+                    const nodoResultado = xml.getElementsByTagName("resultado")[0];
+                    if (nodoResultado) {
+                        document.getElementById("resultado").innerText =
+                            "Resultado: " + nodoResultado.textContent;
+                    } else {
+                        document.getElementById("error").innerText =
+                            "No se pudo leer el resultado de la respuesta.";
+                    }
+                }
+
+            } catch (errorRed) {
+                // Si fetch() falla completamente (sin conexión, servidor caído...)
+                document.getElementById("respuesta").innerText = "Error de red — ¿está el servidor PHP arrancado?";
+                document.getElementById("error").innerText = String(errorRed);
+            }
+        });
+    </script>
+
+</body>
+</html>

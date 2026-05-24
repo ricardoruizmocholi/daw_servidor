@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestor de Tareas — API REST</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: sans-serif; max-width: 900px; margin: 1.5rem auto; padding: 0 1rem; }
+        h1   { border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+        h2   { margin-top: 2rem; }
+        pre  { background: #f4f4f4; padding: 0.75rem; overflow-x: auto; white-space: pre-wrap; border-radius: 4px; font-size: 0.8rem; }
+
+        /* Tabla de tareas */
+        table  { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+        th, td { padding: 0.5rem 0.75rem; border: 1px solid #ddd; text-align: left; font-size: 0.9rem; }
+        th     { background: #333; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .completada td { color: #888; text-decoration: line-through; }
+
+        /* Botones de acción en la tabla */
+        .btn-accion  { padding: 0.25rem 0.6rem; border: none; border-radius: 3px; cursor: pointer; font-size: 0.8rem; margin-right: 3px; }
+        .btn-editar  { background: #1976D2; color: white; }
+        .btn-borrar  { background: #c62828; color: white; }
+        .btn-toggle  { background: #388e3c; color: white; }
+
+        /* Formularios */
+        .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+        label        { display: block; margin-top: 0.5rem; font-weight: bold; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 0.4rem; border: 1px solid #ccc; border-radius: 3px; }
+        textarea     { resize: vertical; height: 60px; }
+        button       { margin-top: 0.75rem; padding: 0.45rem 1.2rem; cursor: pointer; border: none; border-radius: 3px; }
+        .btn-primary { background: #1976D2; color: white; }
+        .btn-danger  { background: #c62828; color: white; }
+        .btn-neutral { background: #555; color: white; }
+
+        /* Prioridades */
+        .prioridad-alta  { color: #b71c1c; font-weight: bold; }
+        .prioridad-media { color: #e65100; }
+        .prioridad-baja  { color: #388e3c; }
+
+        /* Panel de edición */
+        #panelEditar { background: #fff8e1; border: 1px solid #fbc02d; padding: 1rem; border-radius: 4px; display: none; margin-top: 1rem; }
+
+        /* Info box */
+        .info-box { background: #e8f4fd; border-left: 4px solid #2196F3; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.9rem; }
+
+        /* Estado de la última petición */
+        #statusBar { padding: 0.5rem 0.75rem; border-radius: 4px; margin-top: 0.5rem; display: none; font-size: 0.9rem; }
+        .status-ok  { background: #e8f5e9; color: #1b5e20; }
+        .status-err { background: #fce4ec; color: #b71c1c; }
+    </style>
+</head>
+<body>
+
+    <h1>Gestor de Tareas — API REST</h1>
+
+    <div class="info-box">
+        Este cliente demuestra el <strong>CRUD completo</strong> de una API REST:<br>
+        <strong>GET</strong> para listar/consultar · <strong>POST</strong> para crear ·
+        <strong>PATCH</strong> para actualizar · <strong>DELETE</strong> para eliminar.<br>
+        Cada operación usa el método HTTP y el status code correctos.
+    </div>
+
+    <div id="statusBar"></div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 1: Lista de tareas (GET /tareas)                       -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <h2>Tareas actuales</h2>
+    <button class="btn-primary" id="btnCargar">Cargar tareas (GET /tareas)</button>
+    <div id="contenedorTabla"></div>
+
+    <!-- Panel de edición — aparece al pulsar "Editar" en una fila -->
+    <div id="panelEditar">
+        <strong>Editar tarea (PATCH /tareas/<span id="editIdLabel">?</span>)</strong>
+        <input type="hidden" id="editId">
+
+        <div class="form-grid">
+            <div>
+                <label for="editTitulo">Título:</label>
+                <input type="text" id="editTitulo">
+            </div>
+            <div>
+                <label for="editPrioridad">Prioridad:</label>
+                <select id="editPrioridad">
+                    <option value="alta">Alta</option>
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                </select>
+            </div>
+            <div style="grid-column: 1/-1">
+                <label for="editDescripcion">Descripción:</label>
+                <textarea id="editDescripcion"></textarea>
+            </div>
+            <div>
+                <label for="editCompletada">¿Completada?</label>
+                <select id="editCompletada">
+                    <option value="false">No</option>
+                    <option value="true">Sí</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn-primary" id="btnActualizar">Guardar cambios (PATCH)</button>
+        <button class="btn-neutral" id="btnCancelarEdicion" style="margin-left:0.5rem">Cancelar</button>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 2: Crear tarea nueva (POST /tareas)                    -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <h2>Crear tarea nueva (POST /tareas)</h2>
+    <form id="formCrear">
+        <div class="form-grid">
+            <div>
+                <label for="nuevoTitulo">Título: <span style="color:red">*</span></label>
+                <input type="text" id="nuevoTitulo" placeholder="Ej: Repasar status codes REST" required>
+            </div>
+            <div>
+                <label for="nuevaPrioridad">Prioridad:</label>
+                <select id="nuevaPrioridad">
+                    <option value="alta">Alta</option>
+                    <option value="media" selected>Media</option>
+                    <option value="baja">Baja</option>
+                </select>
+            </div>
+            <div style="grid-column: 1/-1">
+                <label for="nuevaDescripcion">Descripción (opcional):</label>
+                <textarea id="nuevaDescripcion" placeholder="Detalles de la tarea..."></textarea>
+            </div>
+        </div>
+        <button type="submit" class="btn-primary">Crear tarea (POST)</button>
+    </form>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- SECCIÓN 3: Debug — petición y respuesta HTTP                   -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <h2>Última petición enviada</h2>
+    <pre id="peticion">Aún no se ha enviado ninguna petición.</pre>
+
+    <h2>Última respuesta recibida</h2>
+    <pre id="respuesta">Aquí aparecerá la respuesta JSON del servidor.</pre>
+
+    <script>
+        // URL base del servicio — PATH_INFO empieza aquí
+        const BASE_URL = "gestorTareas.php/tareas";
+
+        // ──────────────────────────────────────────────────────────────
+        // Función central de peticiones REST
+        // Encapsula fetch() para mostrar siempre la petición y la respuesta
+        // ──────────────────────────────────────────────────────────────
+        async function peticionREST(metodo, url, cuerpo = null) {
+            // Construimos los headers — POST y PATCH necesitan Content-Type JSON
+            const headers = { "Accept": "application/json" };
+            if (cuerpo !== null) {
+                headers["Content-Type"] = "application/json";
+            }
+
+            // Mostramos la petición que vamos a hacer (útil para aprender)
+            const cuerpoPretty = cuerpo ? JSON.stringify(cuerpo, null, 2) : "(sin body)";
+            document.getElementById("peticion").innerText =
+                `${metodo} ${url}\n` +
+                `Content-Type: application/json\n\n` +
+                cuerpoPretty;
+
+            document.getElementById("respuesta").innerText = "Esperando respuesta...";
+
+            try {
+                const opciones = { method: metodo, headers };
+                if (cuerpo !== null) {
+                    // El body viaja como string JSON — el servidor lo lee con php://input
+                    opciones.body = JSON.stringify(cuerpo);
+                }
+
+                const resp = await fetch(url, opciones);
+
+                // DELETE devuelve 204 sin body — response.json() fallaría aquí
+                const texto = await resp.text();
+                const datos = texto ? JSON.parse(texto) : null;
+
+                document.getElementById("respuesta").innerText =
+                    `HTTP ${resp.status} ${resp.statusText}\n\n` +
+                    (datos ? JSON.stringify(datos, null, 2) : "(sin cuerpo de respuesta)");
+
+                // Mostramos la barra de estado
+                mostrarStatus(
+                    resp.ok
+                        ? `✔ ${metodo} completado — ${resp.status} ${resp.statusText}`
+                        : `✖ Error ${resp.status}: ${datos?.error ?? resp.statusText}`,
+                    resp.ok ? "ok" : "err"
+                );
+
+                return { ok: resp.ok, status: resp.status, datos };
+
+            } catch (errorRed) {
+                document.getElementById("respuesta").innerText =
+                    "Error de red — ¿está el servidor PHP arrancado?\n" + errorRed;
+                mostrarStatus("Error de red: " + errorRed, "err");
+                return { ok: false, status: 0, datos: null };
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // Renderizado de la tabla de tareas
+        // ──────────────────────────────────────────────────────────────
+        function renderizarTabla(tareas) {
+            if (!tareas || tareas.length === 0) {
+                document.getElementById("contenedorTabla").innerHTML =
+                    "<p style='color:#888'>No hay tareas todavía. ¡Crea una!</p>";
+                return;
+            }
+
+            // Construimos la tabla con una fila por tarea
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Descripción</th>
+                            <th>Prioridad</th>
+                            <th>Completada</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            tareas.forEach(t => {
+                const claseCompletada = t.completada ? "completada" : "";
+                const clasePrioridad  = `prioridad-${t.prioridad}`;
+                const textoToggle     = t.completada ? "Desmarcar" : "Completar";
+
+                html += `
+                    <tr class="${claseCompletada}" data-id="${t.id}">
+                        <td>${t.id}</td>
+                        <td>${escaparHtml(t.titulo)}</td>
+                        <td>${escaparHtml(t.descripcion || "–")}</td>
+                        <td class="${clasePrioridad}">${t.prioridad}</td>
+                        <td>${t.completada ? "✔ Sí" : "✖ No"}</td>
+                        <td>${t.fechaCreacion}</td>
+                        <td>
+                            <button class="btn-accion btn-toggle"
+                                onclick="toggleCompletada(${t.id}, ${!t.completada})">
+                                ${textoToggle}
+                            </button>
+                            <button class="btn-accion btn-editar"
+                                onclick="abrirEdicion(${t.id}, '${escaparHtml(t.titulo)}', '${escaparHtml(t.descripcion || "")}', '${t.prioridad}', ${t.completada})">
+                                Editar
+                            </button>
+                            <button class="btn-accion btn-borrar"
+                                onclick="eliminarTarea(${t.id})">
+                                Borrar
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += "</tbody></table>";
+            document.getElementById("contenedorTabla").innerHTML = html;
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // Cargar todas las tareas: GET /tareas
+        // ──────────────────────────────────────────────────────────────
+        document.getElementById("btnCargar").addEventListener("click", async () => {
+            const { ok, datos } = await peticionREST("GET", BASE_URL);
+            if (ok && datos?.tareas) {
+                renderizarTabla(datos.tareas);
+            }
+        });
+
+        // ──────────────────────────────────────────────────────────────
+        // Crear tarea: POST /tareas
+        // ──────────────────────────────────────────────────────────────
+        document.getElementById("formCrear").addEventListener("submit", async (e) => {
+            e.preventDefault(); // Evitamos que el form recargue la página
+
+            const titulo      = document.getElementById("nuevoTitulo").value.trim();
+            const descripcion = document.getElementById("nuevaDescripcion").value.trim();
+            const prioridad   = document.getElementById("nuevaPrioridad").value;
+
+            if (!titulo) {
+                mostrarStatus("El título es obligatorio.", "err");
+                return;
+            }
+
+            // POST envía los datos en el body como JSON — no en la URL
+            const { ok, datos } = await peticionREST("POST", BASE_URL, {
+                titulo,
+                descripcion,
+                prioridad
+            });
+
+            if (ok) {
+                // Limpiamos el formulario y recargamos la tabla
+                document.getElementById("formCrear").reset();
+                const { datos: datosTodos } = await peticionREST("GET", BASE_URL);
+                if (datosTodos?.tareas) renderizarTabla(datosTodos.tareas);
+            }
+        });
+
+        // ──────────────────────────────────────────────────────────────
+        // Marcar/desmarcar como completada: PATCH /tareas/{id}
+        // Solo enviamos el campo que cambia — eso es PATCH (parcial)
+        // ──────────────────────────────────────────────────────────────
+        async function toggleCompletada(id, nuevoEstado) {
+            const { ok } = await peticionREST(
+                "PATCH",
+                `${BASE_URL}/${id}`,
+                { completada: nuevoEstado } // Solo enviamos el campo que cambia
+            );
+            if (ok) {
+                const { datos } = await peticionREST("GET", BASE_URL);
+                if (datos?.tareas) renderizarTabla(datos.tareas);
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // Abrir el panel de edición con los datos actuales de la tarea
+        // ──────────────────────────────────────────────────────────────
+        function abrirEdicion(id, titulo, descripcion, prioridad, completada) {
+            document.getElementById("editId").value          = id;
+            document.getElementById("editIdLabel").innerText = id;
+            document.getElementById("editTitulo").value      = titulo;
+            document.getElementById("editDescripcion").value = descripcion;
+            document.getElementById("editPrioridad").value   = prioridad;
+            document.getElementById("editCompletada").value  = completada ? "true" : "false";
+            document.getElementById("panelEditar").style.display = "block";
+            // Desplazamos la vista al panel de edición
+            document.getElementById("panelEditar").scrollIntoView({ behavior: "smooth" });
+        }
+
+        // Cerrar el panel de edición sin guardar
+        document.getElementById("btnCancelarEdicion").addEventListener("click", () => {
+            document.getElementById("panelEditar").style.display = "none";
+        });
+
+        // ──────────────────────────────────────────────────────────────
+        // Guardar edición: PATCH /tareas/{id}
+        // Enviamos solo los campos editables (PATCH parcial)
+        // ──────────────────────────────────────────────────────────────
+        document.getElementById("btnActualizar").addEventListener("click", async () => {
+            const id = document.getElementById("editId").value;
+
+            const cambios = {
+                titulo:      document.getElementById("editTitulo").value.trim(),
+                descripcion: document.getElementById("editDescripcion").value.trim(),
+                prioridad:   document.getElementById("editPrioridad").value,
+                completada:  document.getElementById("editCompletada").value === "true"
+            };
+
+            if (!cambios.titulo) {
+                mostrarStatus("El título no puede estar vacío.", "err");
+                return;
+            }
+
+            const { ok } = await peticionREST("PATCH", `${BASE_URL}/${id}`, cambios);
+
+            if (ok) {
+                document.getElementById("panelEditar").style.display = "none";
+                const { datos } = await peticionREST("GET", BASE_URL);
+                if (datos?.tareas) renderizarTabla(datos.tareas);
+            }
+        });
+
+        // ──────────────────────────────────────────────────────────────
+        // Eliminar tarea: DELETE /tareas/{id}
+        // Devuelve 204 No Content — sin body en la respuesta
+        // ──────────────────────────────────────────────────────────────
+        async function eliminarTarea(id) {
+            if (!confirm(`¿Seguro que quieres eliminar la tarea #${id}?`)) return;
+
+            const { ok } = await peticionREST("DELETE", `${BASE_URL}/${id}`);
+
+            if (ok) {
+                // 204 → no hay body, recargamos la tabla con una nueva petición GET
+                const { datos } = await peticionREST("GET", BASE_URL);
+                if (datos?.tareas) renderizarTabla(datos.tareas);
+            }
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // Utilidades
+        // ──────────────────────────────────────────────────────────────
+        function mostrarStatus(texto, tipo) {
+            const bar = document.getElementById("statusBar");
+            bar.style.display = "block";
+            bar.className = tipo === "ok" ? "status-ok" : "status-err";
+            bar.innerText = texto;
+        }
+
+        // Evita XSS al insertar texto del servidor en el HTML
+        function escaparHtml(str) {
+            const div = document.createElement("div");
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // Cargamos las tareas automáticamente al abrir la página
+        window.addEventListener("load", () => {
+            document.getElementById("btnCargar").click();
+        });
+    </script>
+
+</body>
+</html>
