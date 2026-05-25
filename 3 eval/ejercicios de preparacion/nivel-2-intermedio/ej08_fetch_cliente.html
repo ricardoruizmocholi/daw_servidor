@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>EJ08 — Cliente fetch()</title>
+    <!--
+        Concepto: fetch(), await, response.json(), renderizado del DOM
+        Este cliente llama a ej05_rest_get.php
+    -->
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        select, button { padding: 0.4rem; margin: 0.3rem; }
+        ul { list-style: none; padding: 0; }
+        li { background: #f4f4f4; margin: 0.3rem 0; padding: 0.5rem 1rem; border-radius: 4px; }
+        pre { background: #eee; padding: 0.75rem; font-size: 0.8rem; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+    <h1>Catálogo de Películas</h1>
+
+    <label>Género:</label>
+    <select id="genero">
+        <option value="">Todos</option>
+        <option value="drama">Drama</option>
+        <option value="crimen">Crimen</option>
+        <option value="fantasia">Fantasía</option>
+        <option value="ciencia-ficcion">Ciencia ficción</option>
+    </select>
+    <button id="btnCargar">Cargar</button>
+
+    <ul id="lista"></ul>
+    <pre id="debug"></pre>
+
+    <script>
+        // TODO 1: al pulsar #btnCargar
+        //   a) lee el valor de #genero
+        //   b) construye la URL: "ej05_rest_get.php" (sin filtro) o "ej05_rest_get.php?genero=X"
+        //   c) llama a cargarPeliculas(url)
+
+        // TODO 2: implementa async function cargarPeliculas(url)
+        //   a) fetch(url)
+        //   b) await response.json()
+        //   c) muestra el JSON en #debug con JSON.stringify(datos, null, 2)
+        //   d) llama a renderizar(datos.peliculas)
+        //   e) try/catch para errores de red
+        async function cargarPeliculas(url) {
+        }
+
+        // TODO 3: implementa renderizar(peliculas)
+        //   Si está vacío → <li>No hay resultados.</li>
+        //   Si hay datos → un <li> por película con: titulo (anio) — genero — ⭐ nota
+        //   Usa lista.innerHTML con un .map().join("")
+        function renderizar(peliculas) {
+        }
+
+        // TODO 4 (BONUS): carga automáticamente al abrir la página
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>EJ12 — Cliente SOAP completo</title>
+    <!--
+        OBJETIVO: Cliente SOAP que llama al servicio de conversión de temperaturas (ej10)
+        TODOs:
+          1. Construir el XML SOAP con los valores del formulario
+          2. Enviarlo con fetch() (POST, Content-Type: text/xml)
+          3. Parsear la respuesta XML con DOMParser
+          4. Mostrar resultado o Fault en pantalla
+    -->
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        input, select, button { padding: 0.4rem; margin: 0.3rem 0; width: 100%; box-sizing: border-box; }
+        pre  { background: #f4f4f4; padding: 0.75rem; white-space: pre-wrap; font-size: 0.85rem; }
+        .ok  { color: green; font-weight: bold; }
+        .err { color: red;   font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Conversor de Temperaturas — SOAP</h1>
+
+    <label>Valor:</label>
+    <input type="number" id="valor" value="100" step="any">
+
+    <label>De:</label>
+    <select id="de">
+        <option value="celsius">Celsius</option>
+        <option value="fahrenheit">Fahrenheit</option>
+        <option value="kelvin">Kelvin</option>
+    </select>
+
+    <label>A:</label>
+    <select id="a">
+        <option value="fahrenheit">Fahrenheit</option>
+        <option value="celsius">Celsius</option>
+        <option value="kelvin">Kelvin</option>
+    </select>
+
+    <button id="btnConvertir">Convertir</button>
+
+    <p id="resultado"></p>
+
+    <h3>Petición enviada:</h3>
+    <pre id="peticion"></pre>
+
+    <h3>Respuesta recibida:</h3>
+    <pre id="respuesta"></pre>
+
+    <script>
+        document.getElementById("btnConvertir").addEventListener("click", async () => {
+            const valor = document.getElementById("valor").value;
+            const de    = document.getElementById("de").value;
+            const a     = document.getElementById("a").value;
+
+            // TODO 1: Construye el XML SOAP
+            // El Body debe contener <convertirTemperatura> con <valor>, <de> y <a>
+            const xmlSOAP = ``;  // TODO: rellena el template literal
+
+            document.getElementById("peticion").innerText = xmlSOAP;
+
+            // TODO 2: Usa fetch() para enviar el XML al servidor
+            // - método: POST
+            // - Content-Type: "text/xml; charset=utf-8"
+            // - body: xmlSOAP
+            // - URL: "ej10_soap_validacion.php"
+
+            // TODO 3: Lee la respuesta con await respuesta.text()
+            //         Muéstrala en el <pre id="respuesta">
+
+            // TODO 4: Parsea el XML con DOMParser
+            // - Si hay <faultstring> → muestra el error en #resultado con clase "err"
+            // - Si hay <resultado> y <unidad> → muestra el resultado con clase "ok"
+            //   Formato: "100°C = 212°F"
+        });
+    </script>
+
+</body>
+</html>
