@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tienda de Productos — Frontend</title>
+    <style>
+        body        { font-family: Arial, sans-serif; max-width: 860px; margin: 0 auto; padding: 20px; background: #f9f9f9; }
+        h1          { color: #333; }
+        section     { background: white; border: 1px solid #ddd; padding: 16px; margin: 16px 0; border-radius: 8px; }
+        h2          { margin-top: 0; color: #555; font-size: 1rem; }
+        button      { background: #0066cc; color: white; border: none; padding: 8px 14px; cursor: pointer; border-radius: 4px; }
+        button:hover{ background: #0055aa; }
+        input       { padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; margin: 3px; }
+        pre         { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; min-height: 40px; }
+        .campos     { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<h1>Tienda de Productos</h1>
+<p>Frontend que llama a la API REST (archivo 04) y al servicio SOAP (archivo 02).</p>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECCIÓN 1 — REST GET: Lista todos los productos
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section>
+    <h2>1. REST — Lista de productos (GET /productos)</h2>
+    <button onclick="listarProductos()">Cargar lista</button>
+    <pre id="listaProductos">Pulsa el botón para cargar...</pre>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECCIÓN 2 — REST POST: Crear producto
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section>
+    <h2>2. REST — Crear producto (POST /productos)</h2>
+    <div class="campos">
+        <input type="text"   id="pNombre"    placeholder="Nombre"    />
+        <input type="text"   id="pCategoria" placeholder="Categoría" />
+        <input type="number" id="pPrecio"    placeholder="Precio"    step="0.01" />
+        <input type="number" id="pStock"     placeholder="Stock"     />
+        <button onclick="crearProducto()">Crear</button>
+    </div>
+    <pre id="respuestaPost">Resultado aquí...</pre>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECCIÓN 3 — REST DELETE: Eliminar producto
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section>
+    <h2>3. REST — Eliminar producto (DELETE /productos/{id})</h2>
+    <div class="campos">
+        <input type="number" id="idEliminar" placeholder="ID del producto" />
+        <button onclick="eliminarProducto()">Eliminar</button>
+    </div>
+    <pre id="respuestaDelete">Resultado aquí...</pre>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECCIÓN 4 — SOAP: Consultar stock
+     ══════════════════════════════════════════════════════════════════════════ -->
+<section>
+    <h2>4. SOAP — Consultar stock (consultarStock)</h2>
+    <div class="campos">
+        <input type="text" id="nombreStock" placeholder="Nombre del producto" value="Camiseta" />
+        <button onclick="consultarStock()">Consultar</button>
+    </div>
+    <pre id="respuestaStock">Resultado aquí...</pre>
+</section>
+
+<script>
+// Ajusta estas URLs a tu entorno local
+const URL_REST = "http://localhost/examen/04_rest_servidor.php";
+const URL_SOAP = "http://localhost/examen/02_soap_servidor.php";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO A: listarProductos()
+//
+// Usa fetch para hacer un GET a URL_REST + "/productos"
+// Muestra el resultado en el elemento con id="listaProductos"
+//
+// Pasos:
+//   1. fetch(URL_REST + "/productos")
+//   2. .then(r => r.json())
+//   3. .then(datos => {
+//          document.getElementById("listaProductos").textContent = JSON.stringify(datos, null, 2);
+//      })
+//   4. .catch(err => { document.getElementById("listaProductos").textContent = "Error: " + err; });
+// ─────────────────────────────────────────────────────────────────────────────
+async function listarProductos() {
+    // TODO A
+    fetch(URL_REST + "/productos")
+        .then(r => r.json())
+        .then(datos => {
+            document.getElementById("listaProductos").textContent = JSON.stringify(datos, null, 2);
+        })
+        .catch(err => {
+            document.getElementById("listaProductos").textContent = "Error: " + err;
+        });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO B: crearProducto()
+//
+// Lee los campos del formulario y hace un POST con JSON.
+//
+// Pasos:
+//   1. Lee los valores de los inputs:
+//      const producto = {
+//          nombre:    document.getElementById("pNombre").value,
+//          categoria: document.getElementById("pCategoria").value,
+//          precio:    parseFloat(document.getElementById("pPrecio").value),
+//          stock:     parseInt(document.getElementById("pStock").value)
+//      };
+//   2. fetch(URL_REST + "/productos", {
+//          method: "POST",
+//          headers: { "Content-Type": "application/json" },
+//          body: JSON.stringify(producto)
+//      })
+//   3. .then(r => r.json())
+//   4. .then(datos => { document.getElementById("respuestaPost").textContent = JSON.stringify(datos, null, 2); })
+// ─────────────────────────────────────────────────────────────────────────────
+async function crearProducto() {
+    // TODO B
+    async function crearProducto() {
+    const producto = {
+        nombre:    document.getElementById("pNombre").value,
+        categoria: document.getElementById("pCategoria").value,
+        precio:    parseFloat(document.getElementById("pPrecio").value),
+        stock:     parseInt(document.getElementById("pStock").value)
+    };
+    
+    fetch(URL_REST + "/productos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(producto)
+    })
+    .then(r => r.json())
+    .then(datos => {
+        document.getElementById("respuestaPost").textContent = JSON.stringify(datos, null, 2);
+        listarProductos(); // Opcional: refresca la lista automáticamente
+    })
+    .catch(err => {
+        document.getElementById("respuestaPost").textContent = "Error: " + err;
+    });
+}
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO C: eliminarProducto()
+//
+// Hace un DELETE a /productos/{id}
+// ATENCIÓN: DELETE con código 204 no tiene body, así que no llames a r.json()
+//
+// Pasos:
+//   1. const id = document.getElementById("idEliminar").value;
+//   2. fetch(URL_REST + "/productos/" + id, { method: "DELETE" })
+//   3. .then(r => {
+//          if (r.status === 204) {
+//              document.getElementById("respuestaDelete").textContent = "Producto eliminado (204 No Content)";
+//          } else {
+//              return r.json().then(datos => {
+//                  document.getElementById("respuestaDelete").textContent = JSON.stringify(datos, null, 2);
+//              });
+//          }
+//      })
+// ─────────────────────────────────────────────────────────────────────────────
+async function eliminarProducto() {
+    // TODO C
+    
+    const id = document.getElementById("idEliminar").value;
+    
+    fetch(URL_REST + "/productos/" + id, { method: "DELETE" })
+    .then(r => {
+        if (r.status === 204) {
+            document.getElementById("respuestaDelete").textContent = "Producto eliminado (204 No Content)";
+            listarProductos(); // Opcional: actualiza la lista en pantalla
+        } else {
+            return r.json().then(datos => {
+                document.getElementById("respuestaDelete").textContent = JSON.stringify(datos, null, 2);
+            });
+        }
+    })
+    .catch(err => {
+        document.getElementById("respuestaDelete").textContent = "Error: " + err;
+    });
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO D: consultarStock()
+//
+// Llama al servicio SOAP. SOAP siempre es POST con Content-Type text/xml.
+// En el frontend usamos fetch igual que con REST, pero con XML en lugar de JSON.
+//
+// Pasos:
+//   1. Lee el nombre del input
+//   2. Construye el envelope (ya está abajo — solo copia el nombre en el template literal)
+//   3. fetch(URL_SOAP, {
+//          method: "POST",
+//          headers: {
+//              "Content-Type": "text/xml; charset=utf-8",
+//              "SOAPAction": "consultarStock"
+//          },
+//          body: envelope
+//      })
+//   4. .then(r => r.text())
+//   5. .then(xmlText => {
+//          const parser = new DOMParser();
+//          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+//          const stock = xmlDoc.getElementsByTagName("stock")[0]?.textContent;
+//          const disp  = xmlDoc.getElementsByTagName("disponible")[0]?.textContent;
+//          document.getElementById("respuestaStock").textContent =
+//              `Stock: ${stock} | Disponible: ${disp}`;
+//      })
+// ─────────────────────────────────────────────────────────────────────────────
+async function consultarStock() {
+    const nombre = document.getElementById("nombreStock").value;
+
+    // Envelope SOAP — no modificar la estructura, solo insertar el nombre
+    const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <consultarStock>
+      <nombre>${nombre}</nombre>
+    </consultarStock>
+  </soap:Body>
+</soap:Envelope>`;
+
+    // TODO D: usa fetch con el envelope y parsea la respuesta XML
+    fetch(URL_SOAP, {
+        method: "POST",
+        headers: {
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": "consultarStock"
+        },
+        body: envelope
+    })
+    .then(r => r.text())
+    .then(xmlText => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        
+        // Comprobamos si el servidor devolvió una etiqueta Fault
+        const fault = xmlDoc.getElementsByTagName("faultstring")[0]?.textContent;
+        if (fault) {
+            document.getElementById("respuestaStock").textContent = `Error SOAP: ${fault}`;
+            return;
+        }
+        
+        const stock = xmlDoc.getElementsByTagName("stock")[0]?.textContent;
+        const disp  = xmlDoc.getElementsByTagName("disponible")[0]?.textContent;
+        document.getElementById("respuestaStock").textContent = `Stock: ${stock} | Disponible: ${disp}`;
+    })
+    .catch(err => {
+        document.getElementById("respuestaStock").textContent = "Error de red: " + err;
+    });
+}
+</script>
+
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  SOLUCIÓN COMPLETA — Mírala solo si ya lo has intentado
+═══════════════════════════════════════════════════════════════════════════════
+
+TODO A:
+    async function listarProductos() {
+        fetch(URL_REST + "/productos")
+            .then(r => r.json())
+            .then(datos => {
+                document.getElementById("listaProductos").textContent = JSON.stringify(datos, null, 2);
+            })
+            .catch(err => {
+                document.getElementById("listaProductos").textContent = "Error: " + err;
+            });
+    }
+
+TODO B:
+    async function crearProducto() {
+        const producto = {
+            nombre:    document.getElementById("pNombre").value,
+            categoria: document.getElementById("pCategoria").value,
+            precio:    parseFloat(document.getElementById("pPrecio").value),
+            stock:     parseInt(document.getElementById("pStock").value)
+        };
+        fetch(URL_REST + "/productos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(producto)
+        })
+        .then(r => r.json())
+        .then(datos => {
+            document.getElementById("respuestaPost").textContent = JSON.stringify(datos, null, 2);
+        })
+        .catch(err => {
+            document.getElementById("respuestaPost").textContent = "Error: " + err;
+        });
+    }
+
+TODO C:
+    async function eliminarProducto() {
+        const id = document.getElementById("idEliminar").value;
+        fetch(URL_REST + "/productos/" + id, { method: "DELETE" })
+        .then(r => {
+            if (r.status === 204) {
+                document.getElementById("respuestaDelete").textContent = "Producto eliminado (204 No Content)";
+            } else {
+                return r.json().then(datos => {
+                    document.getElementById("respuestaDelete").textContent = JSON.stringify(datos, null, 2);
+                });
+            }
+        })
+        .catch(err => {
+            document.getElementById("respuestaDelete").textContent = "Error: " + err;
+        });
+    }
+
+TODO D:
+    async function consultarStock() {
+        const nombre = document.getElementById("nombreStock").value;
+        const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <consultarStock>
+      <nombre>${nombre}</nombre>
+    </consultarStock>
+  </soap:Body>
+</soap:Envelope>`;
+        fetch(URL_SOAP, {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/xml; charset=utf-8",
+                "SOAPAction": "consultarStock"
+            },
+            body: envelope
+        })
+        .then(r => r.text())
+        .then(xmlText => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            const stock = xmlDoc.getElementsByTagName("stock")[0]?.textContent;
+            const disp  = xmlDoc.getElementsByTagName("disponible")[0]?.textContent;
+            document.getElementById("respuestaStock").textContent =
+                `Stock: ${stock} | Disponible: ${disp}`;
+        })
+        .catch(err => {
+            document.getElementById("respuestaStock").textContent = "Error: " + err;
+        });
+    }
+
+═══════════════════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>

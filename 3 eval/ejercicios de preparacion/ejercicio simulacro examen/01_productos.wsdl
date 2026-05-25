@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ╔══════════════════════════════════════════════════════════════════════════╗
+    ║  WSDL — Servicio SOAP de Productos                                       ║
+    ║                                                                          ║
+    ║  Este archivo describe el contrato del servicio SOAP.                    ║
+    ║  Léelo para saber QUÉ operaciones implementar en 02_soap_servidor.php     ║
+    ║                                                                          ║
+    ║  OPERACIONES:                                                            ║
+    ║    1. consultarStock(nombre)  → stock (int) + disponible (bool)          ║
+    ║    2. obtenerPrecio(nombre)   → nombre (string) + precio (decimal)       ║
+    ║                                                                          ║
+    ║  Ambas operaciones devuelven Fault si el producto no existe.             ║
+    ╚══════════════════════════════════════════════════════════════════════════╝
+-->
+<definitions name="ProductosService"
+             targetNamespace="http://localhost/examen/"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:tns="http://localhost/examen/"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TIPOS: estructura de los mensajes de entrada y salida
+       ══════════════════════════════════════════════════════════════════════ -->
+  <types>
+    <xsd:schema targetNamespace="http://localhost/examen/">
+
+      <!-- ── Operación 1: consultarStock ── -->
+      <xsd:element name="consultarStockRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="nombre" type="xsd:string"/>
+            <!-- Ejemplo: <nombre>Camiseta</nombre> -->
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="consultarStockResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="stock"      type="xsd:int"/>
+            <xsd:element name="disponible" type="xsd:boolean"/>
+            <!-- Ejemplo: <stock>50</stock><disponible>true</disponible> -->
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <!-- ── Operación 2: obtenerPrecio ── -->
+      <xsd:element name="obtenerPrecioRequest">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="nombre" type="xsd:string"/>
+            <!-- Ejemplo: <nombre>Zapatos</nombre> -->
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="obtenerPrecioResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="nombre"  type="xsd:string"/>
+            <xsd:element name="precio"  type="xsd:decimal"/>
+            <!-- Ejemplo: <nombre>Zapatos</nombre><precio>49.99</precio> -->
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+    </xsd:schema>
+  </types>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       MENSAJES: los 4 mensajes que puede enviar/recibir el servicio
+       ══════════════════════════════════════════════════════════════════════ -->
+  <message name="consultarStockIn">
+    <part name="parameters" element="tns:consultarStockRequest"/>
+  </message>
+  <message name="consultarStockOut">
+    <part name="parameters" element="tns:consultarStockResponse"/>
+  </message>
+
+  <message name="obtenerPrecioIn">
+    <part name="parameters" element="tns:obtenerPrecioRequest"/>
+  </message>
+  <message name="obtenerPrecioOut">
+    <part name="parameters" element="tns:obtenerPrecioResponse"/>
+  </message>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       PORT TYPE: qué operaciones expone el servicio (como una "interfaz")
+       ══════════════════════════════════════════════════════════════════════ -->
+  <portType name="ProductosPortType">
+    <operation name="consultarStock">
+      <input  message="tns:consultarStockIn"/>
+      <output message="tns:consultarStockOut"/>
+    </operation>
+    <operation name="obtenerPrecio">
+      <input  message="tns:obtenerPrecioIn"/>
+      <output message="tns:obtenerPrecioOut"/>
+    </operation>
+  </portType>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       BINDING: cómo se transportan los mensajes (SOAP sobre HTTP)
+       style="document" + use="literal" es el estándar WS-I
+       ══════════════════════════════════════════════════════════════════════ -->
+  <binding name="ProductosBinding" type="tns:ProductosPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <operation name="consultarStock">
+      <soap:operation soapAction="consultarStock"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+    <operation name="obtenerPrecio">
+      <soap:operation soapAction="obtenerPrecio"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+  </binding>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       SERVICE: dónde está físicamente el servidor
+       ══════════════════════════════════════════════════════════════════════ -->
+  <service name="ProductosService">
+    <port name="ProductosPort" binding="tns:ProductosBinding">
+      <soap:address location="http://localhost/examen/02_soap_servidor.php"/>
+    </port>
+  </service>
+
+</definitions>

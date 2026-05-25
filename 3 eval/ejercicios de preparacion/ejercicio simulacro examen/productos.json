@@ -1,0 +1,23 @@
+[
+    {
+        "id": 1,
+        "nombre": "Camiseta",
+        "categoria": "Ropa",
+        "precio": 19.99,
+        "stock": 50
+    },
+    {
+        "id": 2,
+        "nombre": "Zapatos",
+        "categoria": "Calzado",
+        "precio": 49.99,
+        "stock": 20
+    },
+    {
+        "id": 3,
+        "nombre": "Libro PHP",
+        "categoria": "Libros",
+        "precio": 35.00,
+        "stock": 100
+    }
+]

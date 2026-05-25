@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Videoclub — Frontend REST + SOAP</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      color: #1e293b;
+      padding: 24px;
+    }
+
+    h1 { font-size: 1.6rem; margin-bottom: 6px; }
+    h2 { font-size: 1rem; margin-bottom: 14px; color: #475569; font-weight: bold; }
+    h3 { font-size: 0.85rem; margin-bottom: 8px; text-transform: uppercase;
+         letter-spacing: 0.05em; color: #64748b; }
+
+    /* ── DIAGRAMA DE PROTOCOLOS ────────────────────────────────────────── */
+    .diagrama {
+      background: white;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    .diagrama h2 { color: #1e293b; font-size: 1rem; margin-bottom: 16px; }
+
+    .flujo {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .nodo {
+      border-radius: 10px;
+      padding: 12px 16px;
+      text-align: center;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      flex-shrink: 0;
+      min-width: 110px;
+    }
+
+    .nodo strong { display: block; font-size: 0.9rem; }
+    .nodo-browser  { background: #1e293b; color: white; }
+    .nodo-rest     { background: #1d4ed8; color: white; }
+    .nodo-soap     { background: #b45309; color: white; }
+    .nodo-curl     { background: #6d28d9; color: white; }
+    .nodo-datos    { background: #15803d; color: white; }
+
+    .flecha-bloque {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 0 6px;
+      flex-shrink: 0;
+    }
+
+    .flecha-linea {
+      height: 2px;
+      width: 60px;
+      position: relative;
+    }
+    .flecha-linea::after {
+      content: "▶";
+      position: absolute;
+      right: -6px;
+      top: -8px;
+      font-size: 10px;
+    }
+
+    .flecha-rest  { background: #3b82f6; }
+    .flecha-rest::after  { color: #3b82f6; }
+    .flecha-soap  { background: #f59e0b; }
+    .flecha-soap::after  { color: #f59e0b; }
+    .flecha-curl  { background: #8b5cf6; }
+    .flecha-curl::after  { color: #8b5cf6; }
+    .flecha-datos { background: #22c55e; }
+    .flecha-datos::after { color: #22c55e; }
+
+    .flecha-etiqueta {
+      font-size: 0.68rem;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    .etq-rest  { color: #1d4ed8; }
+    .etq-soap  { color: #b45309; }
+    .etq-curl  { color: #6d28d9; }
+    .etq-datos { color: #15803d; }
+
+    .separador-flujo {
+      padding: 0 8px;
+      color: #94a3b8;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .leyenda {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .leyenda-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: #475569;
+    }
+    .leyenda-punto {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+
+    /* ── GRID PRINCIPAL ────────────────────────────────────────────────── */
+    .grid-principal {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 900px) { .grid-principal { grid-template-columns: 1fr; } }
+
+    /* ── PANEL GENÉRICO ────────────────────────────────────────────────── */
+    .panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .panel-cabecera {
+      padding: 14px 18px 12px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .panel-cuerpo { padding: 16px 18px; }
+
+    /* Colores por tipo */
+    .rest .panel-cabecera  { border-color: #3b82f6; background: #eff6ff; }
+    .soap .panel-cabecera  { border-color: #f59e0b; background: #fffbeb; }
+    .curl .panel-cabecera  { border-color: #8b5cf6; background: #f5f3ff; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      margin-right: 6px;
+    }
+    .badge-rest  { background: #dbeafe; color: #1d4ed8; }
+    .badge-soap  { background: #fef3c7; color: #b45309; }
+    .badge-curl  { background: #ede9fe; color: #6d28d9; }
+
+    .metodo {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      font-family: monospace;
+    }
+    .metodo-get    { background: #dcfce7; color: #166534; }
+    .metodo-post   { background: #dbeafe; color: #1e40af; }
+    .metodo-put    { background: #fef9c3; color: #854d0e; }
+    .metodo-delete { background: #fee2e2; color: #991b1b; }
+    .metodo-soap   { background: #fef3c7; color: #92400e; }
+
+    /* ── FORMULARIOS ───────────────────────────────────────────────────── */
+    .campos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      align-items: flex-end;
+    }
+
+    .campo-grupo {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .campo-grupo label {
+      font-size: 0.72rem;
+      color: #64748b;
+      font-weight: bold;
+    }
+
+    input, select {
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      background: #f8fafc;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      outline: 2px solid #3b82f6;
+      border-color: transparent;
+      background: white;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-rest   { background: #2563eb; color: white; }
+    .btn-rest:hover  { background: #1d4ed8; }
+    .btn-soap   { background: #d97706; color: white; }
+    .btn-soap:hover  { background: #b45309; }
+
+    /* ── RESPUESTA ─────────────────────────────────────────────────────── */
+    .respuesta-zona { margin-top: 12px; }
+
+    .respuesta-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .codigo-http {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      font-family: monospace;
+    }
+    .http-2xx { background: #dcfce7; color: #166534; }
+    .http-4xx { background: #fee2e2; color: #991b1b; }
+    .http-5xx { background: #fef3c7; color: #854d0e; }
+    .http-pendiente { background: #e2e8f0; color: #64748b; }
+
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      min-height: 44px;
+      line-height: 1.5;
+      font-family: "Consolas", "Courier New", monospace;
+      white-space: pre-wrap;
+    }
+
+    /* ── REFERENCIA cURL ───────────────────────────────────────────────── */
+    .curl-ref {
+      background: #1e293b;
+      color: #94a3b8;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.76rem;
+      line-height: 1.8;
+      margin-top: 10px;
+    }
+    .curl-ref .c-keyword { color: #93c5fd; }
+    .curl-ref .c-string  { color: #86efac; }
+    .curl-ref .c-const   { color: #fde68a; }
+    .curl-ref .c-comment { color: #64748b; }
+    .curl-ref .c-fn      { color: #c4b5fd; }
+
+    .col-izq  { grid-column: 1; }
+    .col-der  { grid-column: 2; }
+    .col-full { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+
+<h1>🎬 Videoclub — Panel de Comunicaciones</h1>
+<p style="color:#64748b; margin-bottom:20px; font-size:0.9rem;">
+  Frontend que llama a la API REST (<code>02_rest_servidor.php</code>)
+  y al servicio SOAP (<code>01_soap_servidor.php</code>) desde JavaScript.
+</p>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     DIAGRAMA DE PROTOCOLOS
+     ══════════════════════════════════════════════════════════════════ -->
+<div class="diagrama">
+  <h2>¿Qué ocurre cuando pulsas un botón? — Diagrama de flujo</h2>
+
+  <div class="flujo">
+
+    <!-- Navegador -->
+    <div class="nodo nodo-browser">
+      <strong>🖥️ Navegador</strong>
+      JavaScript<br>fetch()
+    </div>
+
+    <!-- Flecha REST -->
+    <div class="flecha-bloque">
+      <span class="flecha-etiqueta etq-rest">HTTP + JSON</span>
+      <div class="flecha-linea flecha-rest"></div>
+      <span class="flecha-etiqueta etq-rest">GET/POST/PUT/DELETE</span>
+    </div>
+
+    <!-- Servidor REST -->
+    <div class="nodo nodo-rest">
+      <strong>🔵 REST</strong>
+      02_rest_servidor<br>.php
+    </div>
+
+    <!-- Flecha datos REST -->
+    <div class="flecha-bloque">
+      <span class="flecha-etiqueta etq-datos">lee / escribe</span>
+      <div class="flecha-linea flecha-datos"></div>
+      <span class="flecha-etiqueta etq-datos">JSON file</span>
+    </div>
+
+    <!-- Datos -->
+    <div class="nodo nodo-datos">
+      <strong>📁 Datos</strong>
+      peliculas.json
+    </div>
+
+    <!-- Flecha datos SOAP -->
+    <div class="flecha-bloque">
+      <span class="flecha-etiqueta etq-datos">lee / escribe</span>
+      <div class="flecha-linea flecha-datos" style="transform:scaleX(-1)"></div>
+      <span class="flecha-etiqueta etq-datos">JSON file</span>
+    </div>
+
+    <!-- Servidor SOAP -->
+    <div class="nodo nodo-soap">
+      <strong>🟠 SOAP</strong>
+      01_soap_servidor<br>.php
+    </div>
+
+    <!-- Flecha SOAP -->
+    <div class="flecha-bloque">
+      <span class="flecha-etiqueta etq-soap">HTTP + XML</span>
+      <div class="flecha-linea flecha-soap" style="transform:scaleX(-1)"></div>
+      <span class="flecha-etiqueta etq-soap">POST + envelope</span>
+    </div>
+
+    <!-- Navegador (derecha) -->
+    <div class="nodo nodo-browser">
+      <strong>🖥️ Navegador</strong>
+      DOMParser()<br>parseFromString()
+    </div>
+
+  </div>
+
+  <div style="margin-top:16px; font-size:0.82rem; color:#475569; background:#f8fafc;
+              padding:12px 14px; border-radius:8px; border-left:3px solid #94a3b8;">
+    <strong>cURL (PHP server-side)</strong> hace exactamente lo mismo pero desde PHP:
+    <code style="background:#e2e8f0;padding:1px 5px;border-radius:4px;">curl_init → curl_setopt → curl_exec → curl_close</code>
+    — el servidor PHP actúa de cliente y llama a otro servidor.
+  </div>
+
+  <div class="leyenda">
+    <div class="leyenda-item">
+      <div class="leyenda-punto" style="background:#3b82f6"></div>
+      REST: devuelve <strong>JSON</strong> · Content-Type: application/json
+    </div>
+    <div class="leyenda-item">
+      <div class="leyenda-punto" style="background:#f59e0b"></div>
+      SOAP: devuelve <strong>XML</strong> · Content-Type: text/xml · siempre POST
+    </div>
+    <div class="leyenda-item">
+      <div class="leyenda-punto" style="background:#22c55e"></div>
+      DELETE responde <strong>204</strong> sin body · no llames a .json()
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     AJUSTA LAS URLs A TU ENTORNO
+     ══════════════════════════════════════════════════════════════════ -->
+<script>
+// Ajusta estas URLs a tu entorno local
+const URL_REST = "http://localhost/videoclub/02_rest_servidor.php";
+const URL_SOAP = "http://localhost/videoclub/01_soap_servidor.php";
+</script>
+
+
+<div class="grid-principal">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       COLUMNA IZQUIERDA — REST
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="col-izq">
+
+    <!-- SECCIÓN A: GET todas las películas -->
+    <div class="panel rest">
+      <div class="panel-cabecera">
+        <span class="badge badge-rest">REST</span>
+        <span class="metodo metodo-get">GET</span>
+        <strong style="font-size:0.9rem"> /peliculas — Lista completa</strong>
+      </div>
+      <div class="panel-cuerpo">
+        <button class="btn-rest" onclick="listarPeliculas()">Cargar catálogo</button>
+
+        <div class="respuesta-zona">
+          <div class="respuesta-header">
+            <h3 style="margin:0">Respuesta</h3>
+            <span id="cA_codigo" class="codigo-http http-pendiente">—</span>
+          </div>
+          <pre id="cA_pre">Pulsa el botón para cargar...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN B: GET por ID -->
+    <div class="panel rest">
+      <div class="panel-cabecera">
+        <span class="badge badge-rest">REST</span>
+        <span class="metodo metodo-get">GET</span>
+        <strong style="font-size:0.9rem"> /peliculas/{id} — Buscar por ID</strong>
+      </div>
+      <div class="panel-cuerpo">
+        <div class="campos">
+          <div class="campo-grupo">
+            <label>ID de la película</label>
+            <input type="number" id="buscId" placeholder="Ej: 2" style="width:120px" />
+          </div>
+          <button class="btn-rest" onclick="buscarPelicula()" style="margin-top:18px">Buscar</button>
+        </div>
+
+        <div class="respuesta-zona">
+          <div class="respuesta-header">
+            <h3 style="margin:0">Respuesta</h3>
+            <span id="cB_codigo" class="codigo-http http-pendiente">—</span>
+          </div>
+          <pre id="cB_pre">Resultado aquí...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN C: POST crear película -->
+    <div class="panel rest">
+      <div class="panel-cabecera">
+        <span class="badge badge-rest">REST</span>
+        <span class="metodo metodo-post">POST</span>
+        <strong style="font-size:0.9rem"> /peliculas — Crear película</strong>
+      </div>
+      <div class="panel-cuerpo">
+        <div class="campos">
+          <div class="campo-grupo" style="flex:1 1 120px">
+            <label>Título</label>
+            <input type="text" id="cTitulo" placeholder="Inception" />
+          </div>
+          <div class="campo-grupo" style="flex:1 1 120px">
+            <label>Director</label>
+            <input type="text" id="cDirector" placeholder="C. Nolan" />
+          </div>
+          <div class="campo-grupo" style="flex:1 1 100px">
+            <label>Género</label>
+            <input type="text" id="cGenero" placeholder="Acción" />
+          </div>
+          <div class="campo-grupo" style="flex:0 0 80px">
+            <label>Precio €</label>
+            <input type="number" id="cPrecio" step="0.01" placeholder="3.20" />
+          </div>
+          <div class="campo-grupo" style="flex:0 0 70px">
+            <label>Copias</label>
+            <input type="number" id="cCopias" placeholder="4" />
+          </div>
+        </div>
+        <button class="btn-rest" onclick="crearPelicula()">Crear película</button>
+
+        <div class="respuesta-zona">
+          <div class="respuesta-header">
+            <h3 style="margin:0">Respuesta</h3>
+            <span id="cC_codigo" class="codigo-http http-pendiente">—</span>
+          </div>
+          <pre id="cC_pre">Resultado aquí...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN D: DELETE -->
+    <div class="panel rest">
+      <div class="panel-cabecera">
+        <span class="badge badge-rest">REST</span>
+        <span class="metodo metodo-delete">DELETE</span>
+        <strong style="font-size:0.9rem"> /peliculas/{id} — Eliminar</strong>
+      </div>
+      <div class="panel-cuerpo">
+        <div class="campos">
+          <div class="campo-grupo">
+            <label>ID a eliminar</label>
+            <input type="number" id="delId" placeholder="Ej: 3" style="width:120px" />
+          </div>
+          <button class="btn-rest" onclick="eliminarPelicula()" style="margin-top:18px">Eliminar</button>
+        </div>
+
+        <div class="respuesta-zona">
+          <div class="respuesta-header">
+            <h3 style="margin:0">Respuesta</h3>
+            <span id="cD_codigo" class="codigo-http http-pendiente">—</span>
+          </div>
+          <pre id="cD_pre">Resultado aquí...</pre>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /col-izq -->
+
+
+  <!-- ════════════════════════════════════════════════════════════════
+       COLUMNA DERECHA — SOAP + cURL
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="col-der">
+
+    <!-- SECCIÓN E: SOAP consultarDisponibilidad -->
+    <div class="panel soap">
+      <div class="panel-cabecera">
+        <span class="badge badge-soap">SOAP</span>
+        <span class="metodo metodo-soap">POST XML</span>
+        <strong style="font-size:0.9rem"> consultarDisponibilidad</strong>
+      </div>
+      <div class="panel-cuerpo">
+        <div class="campos">
+          <div class="campo-grupo" style="flex:1">
+            <label>Título de la película</label>
+            <input type="text" id="soapTituloDisp" placeholder="Ej: Matrix" value="Matrix" />
+          </div>
+          <button class="btn-soap" onclick="consultarDisponibilidad()" style="margin-top:18px">Consultar</button>
+        </div>
+
+        <div class="respuesta-zona">
+          <div class="respuesta-header">
+            <h3 style="margin:0">Respuesta XML</h3>
+            <span id="cE_codigo" class="codigo-http http-pendiente">—</span>
+          </div>
+          <pre id="cE_pre">Resultado aquí...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN F: SOAP alquilarPelicula -->
+    <div class="panel soap">
+      <div class="panel-cabecera">
+        <span class="badge badge-soap">SOAP</span>
+        <span class="metodo metodo-soap">POST XML</span>
+        <strong style="font-size:0.9rem"> alquilarPelicula</strong>
+      </div>
+      <div class="panel-cuerpo">
+        <div class="campos">
+          <div class="campo-grupo" style="flex:1">
+            <label>Título a alquilar</label>
+            <input type="text" id="soapTituloAlq" placeholder="Ej: Interstellar" value="Interstellar" />
+          </div>
+          <button class="btn-soap" onclick="alquilarPelicula()" style="margin-top:18px">Alquilar</button>
+        </div>
+
+        <div class="respuesta-zona">
+          <div class="respuesta-header">
+            <h3 style="margin:0">Respuesta XML</h3>
+            <span id="cF_codigo" class="codigo-http http-pendiente">—</span>
+          </div>
+          <pre id="cF_pre">Resultado aquí...</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERENCIA cURL (panel informativo, no tiene TODOs) -->
+    <div class="panel curl">
+      <div class="panel-cabecera">
+        <span class="badge badge-curl">cURL</span>
+        <strong style="font-size:0.9rem"> PHP server-side — Equivalencias</strong>
+        <p style="font-size:0.75rem;color:#64748b;margin-top:4px">
+          Esto va en <code>03_curl_cliente.php</code>. El servidor PHP actúa de cliente.
+        </p>
+      </div>
+      <div class="panel-cuerpo">
+
+        <h3>GET — equivale a fetch(url)</h3>
+        <div class="curl-ref">
+<span class="c-comment">// GET con cURL en PHP</span>
+<span class="c-fn">$ch</span> = <span class="c-fn">curl_init</span>(<span class="c-string">"$urlRest/peliculas"</span>);
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_RETURNTRANSFER</span>, <span class="c-keyword">true</span>);
+<span class="c-fn">$respuesta</span>  = <span class="c-fn">curl_exec</span>(<span class="c-fn">$ch</span>);
+<span class="c-fn">$codigoHttp</span> = <span class="c-fn">curl_getinfo</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLINFO_HTTP_CODE</span>);
+<span class="c-fn">curl_close</span>(<span class="c-fn">$ch</span>);
+        </div>
+
+        <h3 style="margin-top:14px">POST JSON — equivale a fetch con method:POST</h3>
+        <div class="curl-ref">
+<span class="c-fn">$json</span> = <span class="c-fn">json_encode</span>(<span class="c-fn">$datos</span>);
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_POST</span>,       <span class="c-keyword">true</span>);
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_POSTFIELDS</span>, <span class="c-fn">$json</span>);
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_HTTPHEADER</span>, [
+    <span class="c-string">"Content-Type: application/json"</span>,
+    <span class="c-string">"Content-Length: "</span> . <span class="c-fn">strlen</span>(<span class="c-fn">$json</span>)
+]);
+        </div>
+
+        <h3 style="margin-top:14px">POST SOAP XML — equivale a fetch con XML</h3>
+        <div class="curl-ref">
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_POST</span>,       <span class="c-keyword">true</span>);
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_POSTFIELDS</span>, <span class="c-fn">$envelopeXml</span>);
+<span class="c-fn">curl_setopt</span>(<span class="c-fn">$ch</span>, <span class="c-const">CURLOPT_HTTPHEADER</span>, [
+    <span class="c-string">"Content-Type: text/xml; charset=utf-8"</span>,
+    <span class="c-string">"SOAPAction: consultarDisponibilidad"</span>
+]);
+<span class="c-comment">// Parsear respuesta XML:</span>
+<span class="c-fn">$dom</span> = <span class="c-keyword">new</span> <span class="c-fn">DOMDocument</span>();
+<span class="c-fn">$dom</span>-><span class="c-fn">loadXML</span>(<span class="c-fn">$respuesta</span>);
+<span class="c-fn">$val</span> = <span class="c-fn">$dom</span>-><span class="c-fn">getElementsByTagName</span>(<span class="c-string">"copias"</span>)-><span class="c-fn">item</span>(0)-><span class="c-fn">nodeValue</span>;
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /col-der -->
+
+</div><!-- /grid-principal -->
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     JAVASCRIPT — TODOs
+     ══════════════════════════════════════════════════════════════════ -->
+<script>
+
+// ── Helper visual ─────────────────────────────────────────────────────────
+function mostrarRespuesta(idPre, idCodigo, codigo, texto) {
+  const preEl  = document.getElementById(idPre);
+  const codEl  = document.getElementById(idCodigo);
+  preEl.textContent = texto;
+  codEl.textContent = codigo || "—";
+  codEl.className = "codigo-http " +
+    (!codigo ? "http-pendiente" : codigo >= 200 && codigo < 300 ? "http-2xx"
+    : codigo >= 400 && codigo < 500 ? "http-4xx" : "http-5xx");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO A: listarPeliculas()
+//
+// Hace un GET a URL_REST + "/peliculas" y muestra el resultado.
+//
+// Pasos:
+//   1. fetch(URL_REST + "/peliculas")
+//   2. .then(r => { mostrarRespuesta("cA_pre","cA_codigo", r.status, "cargando..."); return r.json(); })
+//   3. .then(datos => {
+//          mostrarRespuesta("cA_pre","cA_codigo", 200, JSON.stringify(datos, null, 2));
+//      })
+//   4. .catch(err => mostrarRespuesta("cA_pre","cA_codigo", 0, "Error de red: " + err));
+// ─────────────────────────────────────────────────────────────────────────────
+function listarPeliculas() {
+        fetch(URL_REST + "/peliculas")
+        .then(res => {
+            const codigo = res.status;
+            return res.json().then(datos => [codigo, datos]);
+        })
+        .then(([codigo, datos]) => {
+            mostrarRespuesta("rG_pre", "rG_codigo", codigo, JSON.stringify(datos, null, 2));
+        })
+        .catch(err => {
+            mostrarRespuesta("rG_pre", "rG_codigo", "Error", err.message);
+        });
+    }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO B: buscarPelicula()
+//
+// Hace GET a URL_REST + "/peliculas/" + id (el id viene del input con id="buscId")
+//
+// Pasos:
+//   1. const id = document.getElementById("buscId").value;
+//   2. fetch(URL_REST + "/peliculas/" + id)
+//   3. .then(r => { const codigo = r.status; return r.json().then(d => [codigo, d]); })
+//   4. .then(([codigo, datos]) => {
+//          mostrarRespuesta("cB_pre","cB_codigo", codigo, JSON.stringify(datos, null, 2));
+//      })
+//   5. .catch(err => mostrarRespuesta("cB_pre","cB_codigo", 0, "Error: " + err));
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buscarPelicula() {
+    const id = document.getElementById("buscId").value;
+    if (!id) {
+        alert("Por favor, introduce un ID válido");
+        return;
+    }
+
+    fetch(URL_REST + "/peliculas/" + id)
+        .then(r => { 
+            const codigo = r.status; 
+            return r.json().then(d => [codigo, d]); 
+        })
+        .then(([codigo, datos]) => {
+            mostrarRespuesta("cB_pre", "cB_codigo", codigo, JSON.stringify(datos, null, 2));
+        })
+        .catch(err => {
+            mostrarRespuesta("cB_pre", "cB_codigo", 0, "Error: " + err);
+        });
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO C: crearPelicula()
+//
+// Lee los 5 campos del formulario y hace POST con JSON.
+//
+// Pasos:
+//   1. const pelicula = {
+//          titulo:          document.getElementById("cTitulo").value,
+//          director:        document.getElementById("cDirector").value,
+//          genero:          document.getElementById("cGenero").value,
+//          precio_alquiler: parseFloat(document.getElementById("cPrecio").value),
+//          copias:          parseInt(document.getElementById("cCopias").value)
+//      };
+//   2. fetch(URL_REST + "/peliculas", {
+//          method: "POST",
+//          headers: { "Content-Type": "application/json" },
+//          body: JSON.stringify(pelicula)
+//      })
+//   3. .then(r => { const c = r.status; return r.json().then(d => [c, d]); })
+//   4. .then(([codigo, datos]) => {
+//          mostrarRespuesta("cC_pre","cC_codigo", codigo, JSON.stringify(datos, null, 2));
+//      })
+//   5. .catch(err => mostrarRespuesta("cC_pre","cC_codigo", 0, "Error: " + err));
+// ─────────────────────────────────────────────────────────────────────────────
+function crearPelicula() {
+        const nuevaPeli = {
+            titulo:          document.getElementById("pTitulo").value,
+            director:        document.getElementById("pDirector").value,
+            genero:          document.getElementById("pGenero").value,
+            precio_alquiler: parseFloat(document.getElementById("pPrecio").value),
+            copias:          parseInt(document.getElementById("pCopias").value)
+        };
+
+        fetch(URL_REST + "/peliculas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevaPeli)
+        })
+        .then(res => {
+            const codigo = res.status;
+            return res.json().then(datos => [codigo, datos]);
+        })
+        .then(([codigo, datos]) => {
+            mostrarRespuesta("rP_pre", "rP_codigo", codigo, JSON.stringify(datos, null, 2));
+            listarPeliculas(); // Actualiza la lista automáticamente para ver los cambios
+        })
+        .catch(err => {
+            mostrarRespuesta("rP_pre", "rP_codigo", "Error", err.message);
+        });
+    }
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO D: eliminarPelicula()
+//
+// Hace DELETE a /peliculas/{id}.
+// ATENCIÓN: DELETE devuelve 204 SIN body — no llames a r.json() si status === 204
+//
+// Pasos:
+//   1. const id = document.getElementById("delId").value;
+//   2. fetch(URL_REST + "/peliculas/" + id, { method: "DELETE" })
+//   3. .then(r => {
+  //          if (r.status === 204) {
+    //              mostrarRespuesta("cD_pre","cD_codigo", 204, "204 No Content — Película eliminada");
+    //          } else {
+      //              return r.json().then(d => {
+        //                  mostrarRespuesta("cD_pre","cD_codigo", r.status, JSON.stringify(d, null, 2));
+        //              });
+        //          }
+        //      })
+        //   4. .catch(err => mostrarRespuesta("cD_pre","cD_codigo", 0, "Error: " + err));
+        // ─────────────────────────────────────────────────────────────────────────────
+        
+  function eliminarPelicula() {
+          const id = document.getElementById("idEliminar").value;
+          if (!id) return alert("Introduce un ID válido");
+  
+          fetch(URL_REST + "/peliculas/" + id, {
+              method: "DELETE"
+          })
+          .then(res => {
+              const codigo = res.status;
+              // El estado 204 no devuelve cuerpo JSON. Lo validamos de manera explícita.
+              if (codigo === 204) {
+                  mostrarRespuesta("rD_pre", "rD_codigo", codigo, "Película eliminada correctamente (Sin contenido en la respuesta).");
+                  listarPeliculas(); // Refresca la lista en pantalla
+              } else {
+                  return res.json().then(datos => {
+                      mostrarRespuesta("rD_pre", "rD_codigo", codigo, JSON.stringify(datos, null, 2));
+                  });
+              }
+          })
+          .catch(err => {
+              mostrarRespuesta("rD_pre", "rD_codigo", "Error", err.message);
+          });
+      }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO E: consultarDisponibilidad()
+//
+// SOAP siempre es POST con Content-Type: text/xml y el body es un envelope XML.
+// La respuesta también es XML — hay que parsearla con DOMParser.
+//
+// Pasos:
+//   1. const titulo = document.getElementById("soapTituloDisp").value;
+//   2. Construye el envelope (inserta el titulo en el template literal):
+//      const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+//      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+//        <soap:Body>
+//          <consultarDisponibilidad>
+//            <titulo>${titulo}</titulo>
+//          </consultarDisponibilidad>
+//        </soap:Body>
+//      </soap:Envelope>`;
+//   3. fetch(URL_SOAP, {
+//          method: "POST",
+//          headers: {
+//              "Content-Type": "text/xml; charset=utf-8",
+//              "SOAPAction": "consultarDisponibilidad"
+//          },
+//          body: envelope
+//      })
+//   4. .then(r => { const c = r.status; return r.text().then(t => [c, t]); })
+//   5. .then(([codigo, xmlText]) => {
+//          const parser = new DOMParser();
+//          const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+//          // Comprueba si hay Fault
+//          const fault = xmlDoc.getElementsByTagName("faultstring")[0]?.textContent;
+//          if (fault) {
+//              mostrarRespuesta("cE_pre","cE_codigo", codigo, "SOAP Fault: " + fault);
+//              return;
+//          }
+//          const copias = xmlDoc.getElementsByTagName("copias")[0]?.textContent;
+//          const precio = xmlDoc.getElementsByTagName("precio_alquiler")[0]?.textContent;
+//          const disp   = xmlDoc.getElementsByTagName("disponible")[0]?.textContent;
+//          mostrarRespuesta("cE_pre","cE_codigo", codigo,
+//              `Copias: ${copias}\nPrecio alquiler: ${precio}€\nDisponible: ${disp}\n\n--- XML completo ---\n${xmlText}`);
+//      })
+//   6. .catch(err => mostrarRespuesta("cE_pre","cE_codigo", 0, "Error: " + err));
+// ─────────────────────────────────────────────────────────────────────────────
+function consultarDisponibilidad() {
+        const titulo = document.getElementById("soapTituloDisp").value;
+
+        const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <consultarDisponibilidad>
+      <titulo>${titulo}</titulo>
+    </consultarDisponibilidad>
+  </soap:Body>
+</soap:Envelope>`;
+
+        fetch(URL_SOAP, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "text/xml; charset=utf-8", 
+                "SOAPAction": "consultarDisponibilidad" 
+            },
+            body: envelope
+        })
+        .then(res => {
+            const codigo = res.status;
+            return res.text().then(textoXml => [codigo, textoXml]);
+        })
+        .then(([codigo, xmlText]) => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            
+            // Verificamos si existe un error o Soap Fault inyectado por el servidor
+            const fault = xmlDoc.getElementsByTagName("faultstring")[0]?.textContent;
+            if (fault) {
+                mostrarRespuesta("sD_pre", "sD_codigo", codigo, "SOAP Fault: " + fault + "\n\n--- XML recibido ---\n" + xmlText);
+                return;
+            }
+
+            const copias = xmlDoc.getElementsByTagName("copias")[0]?.textContent;
+            const precio = xmlDoc.getElementsByTagName("precio_alquiler")[0]?.textContent;
+            const disp   = xmlDoc.getElementsByTagName("disponible")[0]?.textContent;
+
+            const resultadoFormateado = `Copias en almacén: ${copias}\nPrecio de alquiler: ${precio}€\n¿Está disponible?: ${disp}\n\n--- XML completo ---\n${xmlText}`;
+            mostrarRespuesta("sD_pre", "sD_codigo", codigo, resultadoFormateado);
+        })
+        .catch(err => {
+            mostrarRespuesta("sD_pre", "sD_codigo", "Error", err.message);
+        });
+    }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TODO F: alquilarPelicula()
+//
+// Igual que consultarDisponibilidad pero:
+//   - operación: "alquilarPelicula"
+//   - SOAPAction: "alquilarPelicula"
+//   - extrae: confirmacion + copias_restantes
+//   - usa los ids: "soapTituloAlq", "cF_pre", "cF_codigo"
+// ─────────────────────────────────────────────────────────────────────────────
+function alquilarPelicula() {
+        const titulo = document.getElementById("soapTituloAlq").value;
+
+        const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <alquilarPelicula>
+      <titulo>${titulo}</titulo>
+    </alquilarPelicula>
+  </soap:Body>
+</soap:Envelope>`;
+
+        fetch(URL_SOAP, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "text/xml; charset=utf-8", 
+                "SOAPAction": "alquilarPelicula" 
+            },
+            body: envelope
+        })
+        .then(res => {
+            const codigo = res.status;
+            return res.text().then(textoXml => [codigo, textoXml]);
+        })
+        .then(([codigo, xmlText]) => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+            
+            const fault = xmlDoc.getElementsByTagName("faultstring")[0]?.textContent;
+            if (fault) {
+                mostrarRespuesta("cF_pre", "cF_codigo", codigo, "SOAP Fault: " + fault + "\n\n--- XML recibido ---\n" + xmlText);
+                return;
+            }
+
+            const confirmacion = xmlDoc.getElementsByTagName("confirmacion")[0]?.textContent;
+            const restantes    = xmlDoc.getElementsByTagName("copias_restantes")[0]?.textContent;
+
+            const resultadoFormateado = `Mensaje: ${confirmacion}\nCopias remanentes: ${restantes}\n\n--- XML completo ---\n${xmlText}`;
+            mostrarRespuesta("cF_pre", "cF_codigo", codigo, resultadoFormateado);
+            listarPeliculas(); // Refresca el panel REST para comprobar que disminuyen las copias en directo
+        })
+        .catch(err => {
+            mostrarRespuesta("cF_pre", "cF_codigo", "Error", err.message);
+        });
+    }
+
+</script>
+
+
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  SOLUCIÓN COMPLETA — Mírala solo si ya lo has intentado
+═══════════════════════════════════════════════════════════════════════════════
+
+TODO A:
+    async function listarPeliculas() {
+        fetch(URL_REST + "/peliculas")
+            .then(r => { const c = r.status; return r.json().then(d => [c, d]); })
+            .then(([codigo, datos]) => {
+                mostrarRespuesta("cA_pre","cA_codigo", codigo, JSON.stringify(datos, null, 2));
+            })
+            .catch(err => mostrarRespuesta("cA_pre","cA_codigo", 0, "Error de red: " + err));
+    }
+
+TODO B:
+    async function buscarPelicula() {
+        const id = document.getElementById("buscId").value;
+        fetch(URL_REST + "/peliculas/" + id)
+            .then(r => { const c = r.status; return r.json().then(d => [c, d]); })
+            .then(([codigo, datos]) => {
+                mostrarRespuesta("cB_pre","cB_codigo", codigo, JSON.stringify(datos, null, 2));
+            })
+            .catch(err => mostrarRespuesta("cB_pre","cB_codigo", 0, "Error: " + err));
+    }
+
+TODO C:
+    async function crearPelicula() {
+        const pelicula = {
+            titulo:          document.getElementById("cTitulo").value,
+            director:        document.getElementById("cDirector").value,
+            genero:          document.getElementById("cGenero").value,
+            precio_alquiler: parseFloat(document.getElementById("cPrecio").value),
+            copias:          parseInt(document.getElementById("cCopias").value)
+        };
+        fetch(URL_REST + "/peliculas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pelicula)
+        })
+        .then(r => { const c = r.status; return r.json().then(d => [c, d]); })
+        .then(([codigo, datos]) => {
+            mostrarRespuesta("cC_pre","cC_codigo", codigo, JSON.stringify(datos, null, 2));
+        })
+        .catch(err => mostrarRespuesta("cC_pre","cC_codigo", 0, "Error: " + err));
+    }
+
+TODO D:
+    async function eliminarPelicula() {
+        const id = document.getElementById("delId").value;
+        fetch(URL_REST + "/peliculas/" + id, { method: "DELETE" })
+        .then(r => {
+            if (r.status === 204) {
+                mostrarRespuesta("cD_pre","cD_codigo", 204, "204 No Content — Película eliminada");
+            } else {
+                return r.json().then(d => {
+                    mostrarRespuesta("cD_pre","cD_codigo", r.status, JSON.stringify(d, null, 2));
+                });
+            }
+        })
+        .catch(err => mostrarRespuesta("cD_pre","cD_codigo", 0, "Error: " + err));
+    }
+
+TODO E:
+    async function consultarDisponibilidad() {
+        const titulo = document.getElementById("soapTituloDisp").value;
+        const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <consultarDisponibilidad>
+      <titulo>${titulo}</titulo>
+    </consultarDisponibilidad>
+  </soap:Body>
+</soap:Envelope>`;
+        fetch(URL_SOAP, {
+            method: "POST",
+            headers: { "Content-Type": "text/xml; charset=utf-8", "SOAPAction": "consultarDisponibilidad" },
+            body: envelope
+        })
+        .then(r => { const c = r.status; return r.text().then(t => [c, t]); })
+        .then(([codigo, xmlText]) => {
+            const xmlDoc = new DOMParser().parseFromString(xmlText, "text/xml");
+            const fault  = xmlDoc.getElementsByTagName("faultstring")[0]?.textContent;
+            if (fault) { mostrarRespuesta("cE_pre","cE_codigo", codigo, "SOAP Fault: " + fault); return; }
+            const copias = xmlDoc.getElementsByTagName("copias")[0]?.textContent;
+            const precio = xmlDoc.getElementsByTagName("precio_alquiler")[0]?.textContent;
+            const disp   = xmlDoc.getElementsByTagName("disponible")[0]?.textContent;
+            mostrarRespuesta("cE_pre","cE_codigo", codigo,
+                `Copias: ${copias}\nPrecio: ${precio}€\nDisponible: ${disp}\n\n--- XML ---\n${xmlText}`);
+        })
+        .catch(err => mostrarRespuesta("cE_pre","cE_codigo", 0, "Error: " + err));
+    }
+
+TODO F:
+    async function alquilarPelicula() {
+        const titulo = document.getElementById("soapTituloAlq").value;
+        const envelope = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <alquilarPelicula>
+      <titulo>${titulo}</titulo>
+    </alquilarPelicula>
+  </soap:Body>
+</soap:Envelope>`;
+        fetch(URL_SOAP, {
+            method: "POST",
+            headers: { "Content-Type": "text/xml; charset=utf-8", "SOAPAction": "alquilarPelicula" },
+            body: envelope
+        })
+        .then(r => { const c = r.status; return r.text().then(t => [c, t]); })
+        .then(([codigo, xmlText]) => {
+            const xmlDoc  = new DOMParser().parseFromString(xmlText, "text/xml");
+            const fault   = xmlDoc.getElementsByTagName("faultstring")[0]?.textContent;
+            if (fault) { mostrarRespuesta("cF_pre","cF_codigo", codigo, "SOAP Fault: " + fault); return; }
+            const confirm = xmlDoc.getElementsByTagName("confirmacion")[0]?.textContent;
+            const copias  = xmlDoc.getElementsByTagName("copias_restantes")[0]?.textContent;
+            mostrarRespuesta("cF_pre","cF_codigo", codigo,
+                `Confirmación: ${confirm}\nCopias restantes: ${copias}\n\n--- XML ---\n${xmlText}`);
+        })
+        .catch(err => mostrarRespuesta("cF_pre","cF_codigo", 0, "Error: " + err));
+    }
+
+═══════════════════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>

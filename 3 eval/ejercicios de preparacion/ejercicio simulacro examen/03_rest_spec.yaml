@@ -1,0 +1,168 @@
+openapi: "3.0.0"
+info:
+  title: API REST — Tienda de Productos
+  version: "1.0"
+  description: |
+    Especificación de la API REST de la tienda.
+    Implementa todos los endpoints en 04_rest_servidor.php
+
+    Los datos se guardan en productos.json (en el mismo directorio).
+    Los campos obligatorios para POST y PUT son: nombre, categoria, precio, stock.
+
+servers:
+  - url: http://localhost/examen
+    description: Servidor local de desarrollo
+
+paths:
+
+  # ════════════════════════════════════════════════════════
+  # ENDPOINT: /04_rest_servidor.php/productos
+  # ════════════════════════════════════════════════════════
+  /04_rest_servidor.php/productos:
+
+    get:
+      summary: Lista todos los productos
+      description: Devuelve el array completo de productos del JSON.
+      responses:
+        "200":
+          description: Lista de productos (puede estar vacía)
+          content:
+            application/json:
+              example:
+                - id: 1
+                  nombre: "Camiseta"
+                  categoria: "Ropa"
+                  precio: 19.99
+                  stock: 50
+                - id: 2
+                  nombre: "Zapatos"
+                  categoria: "Calzado"
+                  precio: 49.99
+                  stock: 20
+
+    post:
+      summary: Crea un nuevo producto
+      description: |
+        Añade un producto al catálogo.
+        El id se genera automáticamente (max id existente + 1).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, categoria, precio, stock]
+              properties:
+                nombre:
+                  type: string
+                  example: "Auriculares"
+                categoria:
+                  type: string
+                  example: "Electrónica"
+                precio:
+                  type: number
+                  format: float
+                  example: 29.99
+                stock:
+                  type: integer
+                  example: 30
+      responses:
+        "201":
+          description: Producto creado correctamente
+          content:
+            application/json:
+              example:
+                id: 4
+                nombre: "Auriculares"
+                categoria: "Electrónica"
+                precio: 29.99
+                stock: 30
+        "400":
+          description: Faltan campos obligatorios
+          content:
+            application/json:
+              example:
+                error: "Faltan campos obligatorios: nombre, categoria, precio, stock"
+
+  # ════════════════════════════════════════════════════════
+  # ENDPOINT: /04_rest_servidor.php/productos/{id}
+  # ════════════════════════════════════════════════════════
+  /04_rest_servidor.php/productos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identificador numérico del producto
+        schema:
+          type: integer
+
+    get:
+      summary: Obtiene un producto por su ID
+      responses:
+        "200":
+          description: Producto encontrado
+          content:
+            application/json:
+              example:
+                id: 1
+                nombre: "Camiseta"
+                categoria: "Ropa"
+                precio: 19.99
+                stock: 50
+        "404":
+          description: Producto no encontrado
+          content:
+            application/json:
+              example:
+                error: "Producto con ID 99 no encontrado"
+
+    put:
+      summary: Reemplaza todos los datos de un producto
+      description: |
+        Actualización COMPLETA. Debes enviar todos los campos.
+        El id no cambia (se conserva el original).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, categoria, precio, stock]
+              properties:
+                nombre:    { type: string }
+                categoria: { type: string }
+                precio:    { type: number }
+                stock:     { type: integer }
+      responses:
+        "200":
+          description: Producto actualizado
+        "400":
+          description: Faltan campos obligatorios
+        "404":
+          description: Producto no encontrado
+
+    delete:
+      summary: Elimina un producto
+      responses:
+        "204":
+          description: Eliminado correctamente (sin cuerpo en la respuesta)
+        "404":
+          description: Producto no encontrado
+          content:
+            application/json:
+              example:
+                error: "Producto con ID 99 no encontrado"
+
+# ════════════════════════════════════════════════════════
+# Esquema del modelo Producto (referencia)
+# ════════════════════════════════════════════════════════
+components:
+  schemas:
+    Producto:
+      type: object
+      properties:
+        id:        { type: integer, readOnly: true }
+        nombre:    { type: string }
+        categoria: { type: string }
+        precio:    { type: number, format: float }
+        stock:     { type: integer }

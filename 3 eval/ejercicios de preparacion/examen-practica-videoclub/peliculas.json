@@ -1,0 +1,6 @@
+[
+  {"id": 1, "titulo": "Interstellar",  "director": "Christopher Nolan",    "genero": "Ciencia Ficción", "precio_alquiler": 3.50, "copias": 5},
+  {"id": 2, "titulo": "El Padrino",    "director": "Francis Ford Coppola", "genero": "Drama",           "precio_alquiler": 2.99, "copias": 3},
+  {"id": 3, "titulo": "Pulp Fiction",  "director": "Quentin Tarantino",    "genero": "Crimen",          "precio_alquiler": 2.50, "copias": 0},
+  {"id": 4, "titulo": "Matrix",        "director": "Lana Wachowski",       "genero": "Acción",          "precio_alquiler": 3.00, "copias": 7}
+]
