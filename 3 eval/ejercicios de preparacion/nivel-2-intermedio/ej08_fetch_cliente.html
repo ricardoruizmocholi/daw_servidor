@@ -33,11 +33,20 @@
     <pre id="debug"></pre>
 
     <script>
+        const selectGenero = document.getElementById("genero");
+        const btnCargar = document.getElementById("btnCargar");
+        const lista = document.getElementById("lista");
+        const debug = document.getElementById("debug");
         // TODO 1: al pulsar #btnCargar
         //   a) lee el valor de #genero
         //   b) construye la URL: "ej05_rest_get.php" (sin filtro) o "ej05_rest_get.php?genero=X"
         //   c) llama a cargarPeliculas(url)
-
+        btnCargar.addEventListener("click", () => {
+            const genero = selectGenero.value;
+            // Si hay género seleccionado añadimos el query string, si no, llamamos al endpoint limpio
+            const url = genero ? `ej05_rest_get.php?genero=${genero}` : "ej05_rest_get.php";
+            cargarPeliculas(url);
+        });
         // TODO 2: implementa async function cargarPeliculas(url)
         //   a) fetch(url)
         //   b) await response.json()
@@ -45,6 +54,26 @@
         //   d) llama a renderizar(datos.peliculas)
         //   e) try/catch para errores de red
         async function cargarPeliculas(url) {
+            try {
+                debug.textContent = "Cargando datos...";
+
+                const respuesta = await fetch(url);
+
+                if (!respuesta.ok) {
+                    throw new Error(`Error en el servidor: ${respuesta.status}`);
+                }
+
+                const datos = await respuesta.json();
+
+                debug.textContent = JSON.stringify(datos,null,2);
+
+                renderizar(datos.peliculas);
+
+
+            } catch (error) {
+                debug.textContent = `Error de red o parseo : ${error.message}`;
+                lista.innerHTML = `<li style="color: red;">No se pudo conectar con el servicio.</li>`;
+            }
         }
 
         // TODO 3: implementa renderizar(peliculas)
@@ -52,9 +81,20 @@
         //   Si hay datos → un <li> por película con: titulo (anio) — genero — ⭐ nota
         //   Usa lista.innerHTML con un .map().join("")
         function renderizar(peliculas) {
+            // Caso en el que el array venga vacío o no exista
+            if (!peliculas || peliculas.length === 0) {
+                lista.innerHTML = "<li>No hay resultados.</li>";
+                return;
+            }
+            lista.innerHTML = peliculas.map(pelicula => {
+                return `<li><strong>${pelicula.titulo}</strong> (${pelicula.anio}) — <em>${pelicula.genero}</em> — ⭐ ${pelicula.nota}</li>`;
+            }).join("");
         }
 
         // TODO 4 (BONUS): carga automáticamente al abrir la página
+        document.addEventListener("DOMContentLoaded", () => {
+            btnCargar.click();
+        });
     </script>
 
 </body>

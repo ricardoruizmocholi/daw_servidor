@@ -8,6 +8,7 @@
  */
 
 // TODO 1: header Content-Type JSON
+header("Content-Type: application/json; charset=utf-8");
 
 $peliculas = [
     ["id" => 1, "titulo" => "El Padrino",              "genero" => "drama",           "anio" => 1972, "nota" => 9.2],
@@ -20,6 +21,25 @@ $peliculas = [
 // TODO 2: Lee $_GET["genero"] (si existe)
 //         Si existe, filtra $peliculas por ese género
 //         Pista: array_filter() + array_values()
+$generoFiltro = isset($_GET["genero"]) ? $_GET["genero"] : null;
+$peliculasResultado = $peliculas;
+
+if($generoFiltro !== null){
+    $peliculasResultado = array_filter($peliculas, function ($pelicula) use ($generoFiltro)  {
+        return strtolower($pelicula["genero"]) === strtolower($generoFiltro);
+    });
+    $peliculasResultado = array_values($peliculasResultado);
+}
 
 // TODO 3: Devuelve 200 con { "total": N, "filtro": X|null, "peliculas": [...] }
+http_response_code(200);
+
+$respuesta = [
+    "total" => count($peliculasResultado),
+    "filtro" => $generoFiltro,
+    "peliculas" => $peliculasResultado
+];
+
+echo json_encode($respuesta);
+
 ?>

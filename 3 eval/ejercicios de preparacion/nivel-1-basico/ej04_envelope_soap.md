@@ -9,17 +9,17 @@ El SOAP siempre tiene la misma estructura. Si la memorizas, el resto es solo rel
 ## Parte A — Estructura básica: rellena los huecos `___`
 
 ```xml
-<?xml version="1.0" encoding="___"?>
-<soap:___ xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
 
-  <soap:___>
+  <soap:Body>
     <sumar>
-      <a>___</a>
-      <b>___</b>
+      <a>4</a>
+      <b>3</b>
     </sumar>
-  </soap:___>
+  </soap:Body>
 
-</soap:___>
+</soap:Envelope>
 ```
 
 Preguntas sobre este XML:
@@ -29,9 +29,9 @@ Preguntas sobre este XML:
 
 _Tus respuestas:_
 ```
-1.
-2.
-3.
+1.**Body es obligatorio**; Header es opcional
+2.El servidor lee el nombre del elemento hijo del Body: `<sumar>` → operación = "sumar".
+3. Siempre **UTF-8**.
 ```
 
 ---
@@ -47,7 +47,11 @@ Reescribe el XML de la Parte A añadiendo un Header con un token de sesión:
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
 
   <!-- Escribe aquí el Header completo -->
-
+  <soap:Header>
+    <sesion>
+      <token>ABC-123</token>
+    </sesion>
+  </soap:Header>
 
   <!-- El Body ya está completo — no lo toques -->
   <soap:Body>
@@ -69,13 +73,13 @@ Completa la respuesta:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<soap:___ xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:___>
-    <___Response>
-      <resultado>___</resultado>
-    </___Response>
-  </soap:___>
-</soap:___>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <sumarResponse>
+      <resultado>11</resultado>
+    </sumarResponse>
+  </soap:Body>
+</soap:Envelope>
 ```
 
 ---
@@ -89,10 +93,10 @@ Completa el Fault:
 <?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
   <soap:Body>
-    <soap:___>
-      <___code>SOAP-ENV:Client</___code>
-      <___string>No se puede dividir entre 0.</___string>
-    </soap:___>
+    <soap:Fault>
+      <faultcode>SOAP-ENV:Client</faultcode>
+      <faultstring>No se puede dividir entre 0.</faultstring>
+    </soap:Fault>
   </soap:Body>
 </soap:Envelope>
 ```
@@ -103,8 +107,8 @@ Preguntas sobre el Fault:
 
 _Tus respuestas:_
 ```
-1.
-2.
+1.Usa Fault cuando hay un **error de protocolo o validación**: datos mal formados, parámetros que faltan, método no POST, o incumplimiento de reglas de protocolo. NO lo uses para resultados negativos de negocio (esos van como respuesta normal con `permitido=false`)
+2.`Client` significa que el error es culpa del cliente (petición incorrecta). `Server` sería un error interno del servidor.
 ```
 
 ---
