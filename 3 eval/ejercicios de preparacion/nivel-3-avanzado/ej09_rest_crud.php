@@ -117,7 +117,7 @@ switch ($metodo) {
             "fecha_creacion" => date("Y-m-d")
         ];
         
-        $notas[] = nuevaNota;
+        $notas[] = $nuevaNota;
         guardarNotas($archivoDatos, $notas);
         responder(201, $nuevaNota);
         break;

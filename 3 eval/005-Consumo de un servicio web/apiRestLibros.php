@@ -147,6 +147,7 @@ if ($metodo === "POST" && $id === null) {
         ]);
     }
 
+    //añadir un nuevo id comprueba lo ids que hay y añade al maximo + 1
     $ids = array_column($libros, "id");
     $nuevoId = empty($ids) ? 1 : max($ids) + 1;
 

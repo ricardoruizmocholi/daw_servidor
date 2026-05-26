@@ -82,14 +82,14 @@
             // El nombre de la etiqueta dentro del Body es la operación: <sumar>, <dividir>...
             // Eso es lo que lee el servidor PHP para saber qué tiene que calcular.
             const xmlSOAP = `<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-    <${operacion}>
-      <a>${a}</a>
-      <b>${b}</b>
-    </${operacion}>
-  </soap:Body>
-</soap:Envelope>`;
+                                <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+                                <soap:Body>
+                                    <${operacion}>
+                                    <a>${a}</a>
+                                    <b>${b}</b>
+                                    </${operacion}>
+                                </soap:Body>
+                                </soap:Envelope>`;
 
             // Mostramos la petición para que el alumno vea el XML que se envía
             document.getElementById("peticion").innerText = xmlSOAP;

@@ -108,7 +108,7 @@ document.getElementById("btnListar").addEventListener("click", async () => {
 // GET /libros/{id}
 // ----------------------------------------------------
 document.getElementById("btnConsultar").addEventListener("click", async () => {
-    const id = document.getElementById("idConsultar").value;
+    const id = document.getElementById("idConsultar").vlaue;
     const url = baseUrl + "/libros/" + encodeURIComponent(id);
 
     mostrarPeticion("GET", url);

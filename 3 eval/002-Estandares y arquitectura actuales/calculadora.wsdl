@@ -109,9 +109,9 @@
             <xsd:element name="dividirResponse">
                 <xsd:complexType>
                     <xsd:sequence>
-                        <!-- El cociente entero: 7 ÷ 2 = 3 -->
+                        <!-- El cociente entero: 7 / 2 = 3 -->
                         <xsd:element name="resultado" type="xsd:double"/>
-                        <!-- El resto: 7 ÷ 2 → resto 1 -->
+                        <!-- El resto: 7 % 2 → resto 1 -->
                         <xsd:element name="resto" type="xsd:double"/>
                     </xsd:sequence>
                 </xsd:complexType>
